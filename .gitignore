@@ -1,0 +1,7 @@
+# Carpetas de compilación
+bin/
+obj/
+
+# Archivos de configuración de usuario de Code::Blocks
+*.layout
+*.depend
