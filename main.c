@@ -307,7 +307,7 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito){
 
 }
 
-void AltaABB(ABB *arbol, int x , int *exito){
+void AltaABB(ABB *arbol, long x , int *exito){
     NodoArbol *pos;
     int encontrado;
 
@@ -344,9 +344,21 @@ void AltaABB(ABB *arbol, int x , int *exito){
 
 
 
-
 }
 
+
+void BajaABB(ABB *arbol,long dniBuscado,int *exito ){
+    NodoArbol **pos;
+    int encontrado;
+
+    LocalizarABB(&(arbol->raiz),dniBuscado,&pos,&encontrado);
+
+    if(encontrado == 0){
+        *exito = 0;
+        return;
+    }else{
+    }
+}
 
 int main(){
     //Definición de Estructuras
