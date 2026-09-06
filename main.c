@@ -10,6 +10,11 @@
 
 static float costoTotalLSO = 0;
 
+//=== PARA BUSCAR ESTRUCTURAS
+//1. LSO
+//2. LVO
+//3. ABB
+
 //Definicion de struc's Patron
 typedef struct {
    long dni; //DNI es el dato x que identifica al struct
@@ -24,8 +29,10 @@ typedef struct {
 
 /*
  =====================================
-Lista Secuencialmente Ordenada (LSO)
-    ================================
+
+1. Lista Secuencialmente Ordenada (LSO)
+
+================================
 */
 
 typedef struct{
@@ -111,7 +118,7 @@ void AltaLSO(lso *lista, elector nuevoElector, int *exito, float *costoTotalLSO)
 /*
   ===================================
 
-  LISTA VINCULADA ORDENADA
+  2. LISTA VINCULADA ORDENADA
 
   ===================================
 */
@@ -229,7 +236,83 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito){
 
 }
 
-void
+void BajaLVO(LVO *lista, int dniBaja,int *exito){
+    Nodo *pos;
+    int encontrado;
+
+    LocalizarLVO(lista,dniBaja,&pos,&encontrado);
+
+    if (encontrado == 0){
+        *exito = 0;
+        return;
+    }else{
+        if(pos == lista->acc){
+            //Supress en la primera posición
+            lista->acc=pos->siguiente;
+
+            /*
+            Supuestamente esto esta mal ?¿
+            lista->acc=lista->cur->siguiente;
+            free(lista->cur);
+            lista->aux = lista->acc;
+            lista->cur = lista->acc;*/
+        }else{
+            //Supress en el medio o primera posición
+            lista->aux->siguiente = pos->siguiente;
+            /*
+            lista->cursor = lista->cursor->siguiente;
+            free(lista->aux->siguiente);
+            lista->aux->siguiente = lista->cur;*/
+        }
+    }
+
+    free(pos);
+    *exito = 1;
+}
+
+/*
+  ===================================
+
+  3. ARBOL BINARIO ORDENADO
+
+  ===================================
+*/
+
+typedef struct NodoArbol {
+    int valor;
+    struct NodoArbol *hi; // Puntero al hijo izquierdo
+    struct NodoArbol *hd; // Puntero al hijo derecho
+} NodoArbol;
+
+
+typedef struct {
+    NodoArbol *raiz; // Puntero de inicio del árbol
+} ABB;
+
+void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito){
+    NodoArbol *p = arbol->raiz;
+    NodoArbol *padre = NULL;
+
+    while(p != NULL && p->valor != x){
+
+        padre = p;
+
+        if(p->valor < x){
+            p = p->hd;
+        }else{
+            p = p->hi;
+        }
+    }
+
+    if(p != NULL){
+        *exito = 1;
+        *pos = p;
+    }else{
+        *exito = 0;
+        *pos = padre;
+    }
+
+}
 
 
 int main(){
