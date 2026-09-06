@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
+#include <ctype.h>
+#include <string.h>
 
 //Constantes
 #define ELECTORES_ESPERADOS 2000
@@ -27,6 +29,29 @@ typedef struct {
 }elector;
 
 
+/*
+|
+| OTROS
+|
+|   */
+
+
+int CompararNombresNoCaseSensitive(const char *str1, const char *str2) {
+    while (*str1 && *str2) {
+        // tolower() convierte cada caracter a minúscula en el momento de comparar
+        if (tolower((unsigned char)*str1) != tolower((unsigned char)*str2)) {
+            return false;
+        }
+        str1++;
+        str2++;
+    }
+    // Si ambas cadenas terminaron al mismo tiempo, son iguales
+   if(*str1 == *str2){
+    return 1;
+   }else{
+    return 0;
+   }
+}
 /*
  =====================================
 
@@ -78,7 +103,8 @@ void LocalizarLSO(lso *lista, int *pos, long dni, int *exito, float *costoTotalL
 //Baja LSO
 void BajaLSO(lso *lista, long dniBuscar, int *exito, float *costoTotalLSO){
     int pos;
-    LocalizarLSO(lista, &pos, dniBuscar, exito);
+
+    LocalizarLSO(lista, &pos, dniBuscar, exito,costoTotalLSO);
 
     if (*exito == 1) {
         for (int j = pos; j < lista->cantidad - 1; j++) {
@@ -93,7 +119,7 @@ void AltaLSO(lso *lista, elector nuevoElector, int *exito, float *costoTotalLSO)
     int pos;
     int exitoPrima;
 
-    LocalizarLSO(lista, &pos, nuevoElector.dni, &exitoPrima);
+    LocalizarLSO(lista, &pos, nuevoElector.dni, &exitoPrima,costoTotalLSO);
 
     if (exitoPrima == 1) {
         *exito = 2; //Fracasa por elemento repetido
@@ -123,7 +149,7 @@ void AltaLSO(lso *lista, elector nuevoElector, int *exito, float *costoTotalLSO)
   ===================================
 */
 
-typedef struct {
+typedef struct Nodo{
     elector dato;
     struct Nodo* siguiente;
 }Nodo;
@@ -142,8 +168,8 @@ typedef struct {
 void InitLVO(LVO *l){
     Nodo *centinela = (Nodo*)malloc(sizeof(Nodo));
 
-    centinela->dato.dni = MAS_INFINITO
-    centinela.siguiente = NULL;
+    centinela->dato.dni = MAS_INFINITO;
+    centinela->siguiente = NULL;
 
     l->acc = centinela;
     l->cur = centinela;
@@ -167,11 +193,11 @@ int IsFullLVO(){
 }
 
 int isOosLVO(LVO l) {
-    return (l.cur == NULL)
+    return (l.cur == NULL);
 }
 
 void FowardsLVO(LVO *l){
-    l-> aux = l-> cur;
+    l->aux = l->cur;
     l->cur = l->cur->siguiente;
 }
 
@@ -181,7 +207,7 @@ elector CopyLVO(LVO l){
 
 
 //----------------------//
-void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito{
+void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito){
 
     ResetLVO(lista);
 
@@ -210,7 +236,7 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito){
     }else{
         Nodo *nuevoNodo = (Nodo *)malloc(sizeof(Nodo));
         if(nuevoNodo != NULL){
-            nuevoNodo.dato = nuevoDato;
+            nuevoNodo->dato = nuevoDato;
             nuevoNodo->siguiente = pos;
 
             if (pos == lista->acc){
@@ -346,17 +372,59 @@ void AltaABB(ABB *arbol, long x , int *exito){
 
 }
 
+int CompararNuplasCompletas(elector nuplaArbol, elector nuplaBajar) {
+
+    // 1. Verificamos la parte X (Identificador)
+    if (nuplaArbol.dni != nuplaBajar.dni) {
+        return 0; // Son diferentes
+    }
+
+    // 2. Verificamos la parte Y (Resto de los atributos)
+
+    // Para cadenas de caracteres en C, debemos usar strcmp.
+    // Devuelve 0 si las cadenas son exactamente iguales.
+    if (CompararNombresNoCaseSensitive(nuplaArbol.nombre, nuplaBajar.nombre) != 0) {
+        return 0;
+    }
+
+    if (CompararNombresNoCaseSensitive(nuplaArbol.apellido, nuplaBajar.apellido) != 0) {
+        return 0;
+    }
+
+    if (CompararNombresNoCaseSensitive(nuplaArbol.domicilio, nuplaBajar.domicilio) != 0) {
+        return 0;
+    }
+
+    // Para tipos numéricos nativos, usamos el operador tradicional
+    if (nuplaArbol.codigoPostal != nuplaBajar.codigoPostal) {
+        return 0;
+    }
+
+    if (nuplaArbol.numeroMesa != nuplaBajar.numeroMesa) {
+        return 0;
+    }
+
+    if (nuplaArbol.circuito != nuplaBajar.circuito) {
+        return 0;
+    }
+
+    // Si la ejecución llega hasta esta línea, significa que pasó todas
+    // las pruebas: las partes X e Y coinciden de forma absoluta.
+    return 1; // Son iguales
+}
+
 
 void BajaABB(ABB *arbol,long dniBuscado,int *exito ){
     NodoArbol **pos;
     int encontrado;
 
-    LocalizarABB(&(arbol->raiz),dniBuscado,&pos,&encontrado);
+    LocalizarABB(arbol,dniBuscado,pos,&encontrado);
 
     if(encontrado == 0){
         *exito = 0;
         return;
     }else{
+
     }
 }
 
