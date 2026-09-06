@@ -207,33 +207,26 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito){
     if (encontrado == 1){
         *exito = 0;
         return;
-    }
-
-    Nodo *nuevoNodo = (Nodo *)malloc(sizeof(Nodo));
-    if(nuevoNodo == 0){
-        *exito = 0;
-        return;
-    }
-
-    nuevoNodo.dato = nuevoDato;
-    nuevoNodo->siguiente = pos;
-
-    if (pos == lista->acc){
-        lista->acc = nuevoNodo;
     }else{
-        lista->aux->siguiente = nuevoNodo;
+        Nodo *nuevoNodo = (Nodo *)malloc(sizeof(Nodo));
+        if(nuevoNodo != NULL){
+            nuevoNodo.dato = nuevoDato;
+            nuevoNodo->siguiente = pos;
+
+            if (pos == lista->acc){
+                lista->acc = nuevoNodo;
+            }else{
+                lista->aux->siguiente = nuevoNodo;
+            }
+
+            *exito = 1; //el alta fue exitosa
+
+        }else{
+            *exito = 0;
+            return;
+        }
+
     }
-
-
-    //Aplicar insertar ordenado.
-    //L
-    if(lista->cur == lista->acc){
-        lista->acc = nuevoNodo;
-    }else{
-        lista->aux->siguiente = nuevoNodo;
-    }
-    *exito = 1; //el alta fue exitosa
-
 }
 
 void BajaLVO(LVO *lista, int dniBaja,int *exito){
@@ -311,6 +304,46 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito){
         *exito = 0;
         *pos = padre;
     }
+
+}
+
+void AltaABB(ABB *arbol, int x , int *exito){
+    NodoArbol *pos;
+    int encontrado;
+
+    LocalizarABB(arbol,x,&pos,&encontrado);
+
+    if(encontrado == 1){
+        *exito = 0;
+        return;
+    }else{
+        NodoArbol *nuevoNodo = (NodoArbol*)malloc(sizeof(NodoArbol));
+        if(nuevoNodo != NULL){
+            nuevoNodo->valor = x;
+            nuevoNodo->hi = NULL;
+            nuevoNodo->hd = NULL;
+
+            if(pos == NULL){
+                arbol->raiz = nuevoNodo;
+            }else{
+                if (x<pos->valor){
+                    pos->hi = nuevoNodo;
+                }else{
+                    pos->hd = nuevoNodo;
+                }
+            }
+
+            *exito = 1;
+        }else{
+            *exito = 0;
+            return;
+        }
+
+
+    }
+
+
+
 
 }
 
