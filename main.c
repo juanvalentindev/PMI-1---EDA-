@@ -6,6 +6,7 @@
 
 //Constantes
 #define ELECTORES_ESPERADOS 2000
+#define MAS_INFINITO 999999999
 
 static float costoTotalLSO = 0;
 
@@ -20,7 +21,13 @@ typedef struct {
    int circuito;
 }elector;
 
-//Lista Secuencialmente Ordenada (LSO)
+
+/*
+ =====================================
+Lista Secuencialmente Ordenada (LSO)
+    ================================
+*/
+
 typedef struct{
   elector electores[ELECTORES_ESPERADOS];
   int cantidad;
@@ -28,9 +35,11 @@ typedef struct{
 
 
 //Localizar LSO
-/*Directrices
-limite inferior inclusivo, l ́ımi-
-te superior inclusivo, testigo a izquierda y segmento mas grande a la izquierda.*/
+/*
+.Directrices
+|limite inferior inclusivo, l ́ımi-
+.te superior inclusivo, testigo a izquierda y segmento mas grande a la izquierda.
+*/
 
 void LocalizarLSO(lso *lista, int *pos, long dni, int *exito, float *costoTotalLSO){
     int li = 0;
@@ -58,6 +67,7 @@ void LocalizarLSO(lso *lista, int *pos, long dni, int *exito, float *costoTotalL
         *pos = li;
     }
 }
+
 //Baja LSO
 void BajaLSO(lso *lista, long dniBuscar, int *exito, float *costoTotalLSO){
     int pos;
@@ -97,6 +107,130 @@ void AltaLSO(lso *lista, elector nuevoElector, int *exito, float *costoTotalLSO)
         *exito = 1;
     }
 }
+
+/*
+  ===================================
+
+  LISTA VINCULADA ORDENADA
+
+  ===================================
+*/
+
+typedef struct {
+    elector dato;
+    struct Nodo* siguiente;
+}Nodo;
+
+
+typedef struct {
+    Nodo *acc;
+    Nodo *cur;
+    Nodo *aux;
+}LVO;
+
+/*
+°Operaciones de la lista
+|   Vinculada ordenada
+*/
+void InitLVO(LVO *l){
+    Nodo *centinela = (Nodo*)malloc(sizeof(Nodo));
+
+    centinela->dato.dni = MAS_INFINITO
+    centinela.siguiente = NULL;
+
+    l->acc = centinela;
+    l->cur = centinela;
+    l->aux = centinela;
+}
+
+void ResetLVO(LVO *l){
+    l->cur = l->acc;
+    l->aux = l->acc;
+}
+
+int IsEmptyLVO(LVO l){
+    return (l.acc == NULL);
+}
+
+int IsFullLVO(){
+    Nodo *n = (Nodo *)malloc(sizeof(Nodo));
+    if(n == NULL) return 1;
+    free(n);
+    return 0;
+}
+
+int isOosLVO(LVO l) {
+    return (l.cur == NULL)
+}
+
+void FowardsLVO(LVO *l){
+    l-> aux = l-> cur;
+    l->cur = l->cur->siguiente;
+}
+
+elector CopyLVO(LVO l){
+    return l.cur -> dato;
+}
+
+
+//----------------------//
+void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito{
+
+    ResetLVO(lista);
+
+    while( lista->cur->dato.dni < dni){
+        FowardsLVO(lista);
+    }
+
+    *pos = lista->cur;
+
+    if(lista->cur->dato.dni == dni){
+        *exito = 1;
+    }else{
+        *exito = 0;
+    }
+}
+
+void AltaLVO(LVO *lista,elector nuevoDato, int *exito){
+    Nodo *pos;
+    int encontrado; //Seria el exito prima de los apuntes
+
+    LocalizarLVO(lista,nuevoDato.dni,&pos,&encontrado);
+
+    if (encontrado == 1){
+        *exito = 0;
+        return;
+    }
+
+    Nodo *nuevoNodo = (Nodo *)malloc(sizeof(Nodo));
+    if(nuevoNodo == 0){
+        *exito = 0;
+        return;
+    }
+
+    nuevoNodo.dato = nuevoDato;
+    nuevoNodo->siguiente = pos;
+
+    if (pos == lista->acc){
+        lista->acc = nuevoNodo;
+    }else{
+        lista->aux->siguiente = nuevoNodo;
+    }
+
+
+    //Aplicar insertar ordenado.
+    //L
+    if(lista->cur == lista->acc){
+        lista->acc = nuevoNodo;
+    }else{
+        lista->aux->siguiente = nuevoNodo;
+    }
+    *exito = 1; //el alta fue exitosa
+
+}
+
+void
+
 
 int main(){
     //Definición de Estructuras
