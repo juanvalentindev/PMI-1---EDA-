@@ -382,6 +382,13 @@ int CompararNuplasCompletasArbol(elector nuplaArbol, elector nuplaBajar) {
     return 1; // Son iguales
 }
 
+Nodo * hijoNoNULLPos(NodoArbol *nodo){
+    if(nodo->hi!=NULL){
+        return nodo->hi;
+    }else{
+        return nodo->hd;
+    }
+}
 
 void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
     NodoArbol *pos;
@@ -394,19 +401,29 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
         if(CompararNuplasCompletasArbol(pos->valor,electorBaja)){ //Comprobamos que sea la nupla
                 //Aca seria lo de modificación para la baja
                 //aca empieza el kilombo :(
-
             //Caso 1: tengo un nodo padre con dos hijos
-            if(padre != NULL){ //NO ES LA RAIZ
-                if((pos->valor->dni) < (padre->valor->dni)){
-                    padre->hi=NULL;
+            if(pos->hi != NULL && pos->hd != NULL){
+                 if(padre != NULL){ //NO ES LA RAIZ
+                    if((pos->valor->dni) < (padre->valor->dni)){
+                        padre->hi=NULL;
+                    }else{
+                        padre->hd=NULL;
+                    }
                 }else{
-                    padre->hd=NULL;
+                    arbol->raiz = NULL; //es la raiz
                 }
-
-            }else{
-                arbol->raiz = NULL; //es la raiz
+                free(pos);
+            }else if(pos->hd == NULL){ //Caso 2: el nodo que queremos eliminar tiene hijos por una de sus ramas
+                 if (padre != NULL){
+                    if((pos->valor->dni) < (padre->valor->dni)){
+                        padre->hi=hiNoNULLPos(pos);
+                    }else{
+                        padre->hd=hijoNoNULLPos(pos);
+                    }
+                 }else{
+                    arbol->raiz = hijoNoNULLPos(pos);
+                 }                      //Eliminamos izquierda.
             }
-            free(pos);
 
         }else{ //No es la nupla que buscamos
             *exito = 0;
