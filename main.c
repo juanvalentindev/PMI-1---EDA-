@@ -315,7 +315,7 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
     NodoArbol *p = arbol->raiz;
     NodoArbol *padre = NULL;
 
-    while(p != NULL && p->valor != x){
+    while(p != NULL && p->valor.dni != x){
         padre = p;
         if(p->valor < x){
             p = p->hd;
@@ -332,15 +332,18 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
         *pos = padre;
     }
 
-    *padreRetornar = padre; //Retorno el padre para poder utilizarlo en la baja
+    if(padreRetornar !=NULL){
+        *padreRetornar = padre; //Retorno el padre para poder utilizarlo en la baja
+    }
+
 
 
 }
 
-void AltaABB(ABB *arbol, long x , int *exito){
+void AltaABB(ABB *arbol, elector nuevoElector , int *exito){
     NodoArbol *pos;
     int encontrado;
-    LocalizarABB(arbol,x,&pos,&encontrado,NULL);
+    LocalizarABB(arbol,nuevoElector.dni,&pos,&encontrado,NULL);
 
     if(encontrado == 1){
         *exito = 0;
@@ -348,13 +351,13 @@ void AltaABB(ABB *arbol, long x , int *exito){
     }else{
         NodoArbol *nuevoNodo = (NodoArbol*)malloc(sizeof(NodoArbol));
         if(nuevoNodo != NULL){
-            nuevoNodo->valor = x;
+            nuevoNodo->valor = nuevoElector;
             nuevoNodo->hi = NULL;
             nuevoNodo->hd = NULL;
             if(pos == NULL){
                 arbol->raiz = nuevoNodo;
             }else{
-                if (x<pos->valor){
+                if (nuevoElector.dni<pos->valor.dni){
                     pos->hi = nuevoNodo;
                 }else{
                     pos->hd = nuevoNodo;
@@ -393,6 +396,7 @@ Nodo * hijoNoNULLPos(NodoArbol *nodo){
 void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
     NodoArbol *pos;
     NodoArbol *aux; //este es para el caso heavy metal (buscar el mayor de los menores)
+    NodoArbol *padreAux;
     NodoArbol *padre;
     int encontrado;
 
@@ -414,6 +418,7 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                     arbol->raiz = NULL; //es la raiz
                 }
                 free(pos);
+
             }else if(pos->hd == NULL || pos->hi = NULL){ //Caso 2: el nodo que queremos eliminar tiene hijos por una de sus ramas
                  if (padre != NULL){
                     if((pos->valor->dni) < (padre->valor->dni)){
@@ -423,17 +428,30 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                     }
                  }else{
                     arbol->raiz = hijoNoNULLPos(pos);
-                 }                      //Eliminamos izquierda.
+                 }
+                 free(pos);                   //Eliminamos izquierda.
             } else { //Caso con 2 hijos, el mas heavy metal chabon
                 aux = pos->hd; //Doy un paso a al derecha
 
                 while(aux->hi != NULL){ // y bajo todo a la izquierda
+                    padreAux = aux;
                     aux = aux->hi;
                 }
                 pos->valor = aux->valor;
 
+                if (padreAux == pos){
+                    //Aux no tenia hijos a izquierda
+                    padreAux->hd = aux->hd
+                }else{
+                    //Aux era un hijo izquierdo profundo por lo cual , su padre adopta a posible hijo derecho
+                    padreAux->hi = aux->hd;
+                }
+
+                free(aux);
+
 
             }
+            *exito = 1;
 
         }else{ //No es la nupla que buscamos
             *exito = 0;
