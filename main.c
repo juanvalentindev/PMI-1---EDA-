@@ -392,6 +392,7 @@ Nodo * hijoNoNULLPos(NodoArbol *nodo){
 
 void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
     NodoArbol *pos;
+    NodoArbol *aux; //este es para el caso heavy metal (buscar el mayor de los menores)
     NodoArbol *padre;
     int encontrado;
 
@@ -413,7 +414,7 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                     arbol->raiz = NULL; //es la raiz
                 }
                 free(pos);
-            }else if(pos->hd == NULL){ //Caso 2: el nodo que queremos eliminar tiene hijos por una de sus ramas
+            }else if(pos->hd == NULL || pos->hi = NULL){ //Caso 2: el nodo que queremos eliminar tiene hijos por una de sus ramas
                  if (padre != NULL){
                     if((pos->valor->dni) < (padre->valor->dni)){
                         padre->hi=hiNoNULLPos(pos);
@@ -423,6 +424,15 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                  }else{
                     arbol->raiz = hijoNoNULLPos(pos);
                  }                      //Eliminamos izquierda.
+            } else { //Caso con 2 hijos, el mas heavy metal chabon
+                aux = pos->hd; //Doy un paso a al derecha
+
+                while(aux->hi != NULL){ // y bajo todo a la izquierda
+                    aux = aux->hi;
+                }
+                pos->valor = aux->valor;
+
+
             }
 
         }else{ //No es la nupla que buscamos
