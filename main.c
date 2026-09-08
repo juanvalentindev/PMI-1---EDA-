@@ -52,6 +52,7 @@ int CompararNombresNoCaseSensitive(const char *str1, const char *str2) {
     return 0;
    }
 }
+
 /*
  =====================================
 
@@ -165,15 +166,16 @@ typedef struct {
 °Operaciones de la lista
 |   Vinculada ordenada
 */
+
 void InitLVO(LVO *l){
-    Nodo *centinela = (Nodo*)malloc(sizeof(Nodo));
+    Nodo *masInfinito= (Nodo*)malloc(sizeof(Nodo));
 
-    centinela->dato.dni = MAS_INFINITO;
-    centinela->siguiente = NULL;
+    masInfinito=l->dato.dni = MAS_INFINITO;
+    masInfinito=l->siguiente = NULL;
 
-    l->acc = centinela;
-    l->cur = centinela;
-    l->aux = centinela;
+    l->acc = masInfinito;
+    l->cur = masInfinito;
+    l->aux = masInfinito;
 }
 
 void ResetLVO(LVO *l){
@@ -240,6 +242,7 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito){
             nuevoNodo->siguiente = pos;
 
             if (pos == lista->acc){
+                nuevoNodo->siguiente = pos;
                 lista->acc = nuevoNodo;
             }else{
                 lista->aux->siguiente = nuevoNodo;
@@ -258,7 +261,6 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito){
 void BajaLVO(LVO *lista, int dniBaja,int *exito){
     Nodo *pos;
     int encontrado;
-
     LocalizarLVO(lista,dniBaja,&pos,&encontrado);
 
     if (encontrado == 0){
@@ -309,13 +311,12 @@ typedef struct {
 } ABB;
 
 void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito){
+
     NodoArbol *p = arbol->raiz;
     NodoArbol *padre = NULL;
 
     while(p != NULL && p->valor != x){
-
         padre = p;
-
         if(p->valor < x){
             p = p->hd;
         }else{
@@ -336,9 +337,7 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito){
 void AltaABB(ABB *arbol, long x , int *exito){
     NodoArbol *pos;
     int encontrado;
-
     LocalizarABB(arbol,x,&pos,&encontrado);
-
     if(encontrado == 1){
         *exito = 0;
         return;
@@ -348,7 +347,6 @@ void AltaABB(ABB *arbol, long x , int *exito){
             nuevoNodo->valor = x;
             nuevoNodo->hi = NULL;
             nuevoNodo->hd = NULL;
-
             if(pos == NULL){
                 arbol->raiz = nuevoNodo;
             }else{
@@ -358,58 +356,25 @@ void AltaABB(ABB *arbol, long x , int *exito){
                     pos->hd = nuevoNodo;
                 }
             }
-
             *exito = 1;
         }else{
             *exito = 0;
             return;
         }
-
-
     }
-
-
-
 }
 
-int CompararNuplasCompletas(elector nuplaArbol, elector nuplaBajar) {
-
+int CompararNuplasCompletasArbol(elector nuplaArbol, elector nuplaBajar) {
     // 1. Verificamos la parte X (Identificador)
-    if (nuplaArbol.dni != nuplaBajar.dni) {
-        return 0; // Son diferentes
-    }
-
-    // 2. Verificamos la parte Y (Resto de los atributos)
-
-    // Para cadenas de caracteres en C, debemos usar strcmp.
-    // Devuelve 0 si las cadenas son exactamente iguales.
-    if (CompararNombresNoCaseSensitive(nuplaArbol.nombre, nuplaBajar.nombre) != 0) {
-        return 0;
-    }
-
-    if (CompararNombresNoCaseSensitive(nuplaArbol.apellido, nuplaBajar.apellido) != 0) {
-        return 0;
-    }
-
-    if (CompararNombresNoCaseSensitive(nuplaArbol.domicilio, nuplaBajar.domicilio) != 0) {
-        return 0;
-    }
-
+    if (nuplaArbol.dni != nuplaBajar.dni) {return 0;}
+    // 2. Verificamos la parte Y (Resto de los atributos
+    if (CompararNombresNoCaseSensitive(nuplaArbol.nombre, nuplaBajar.nombre) != 0) {return 0;}
+    if (CompararNombresNoCaseSensitive(nuplaArbol.apellido, nuplaBajar.apellido) != 0) {return 0;}
+    if (CompararNombresNoCaseSensitive(nuplaArbol.domicilio, nuplaBajar.domicilio) != 0) {return 0;}
     // Para tipos numéricos nativos, usamos el operador tradicional
-    if (nuplaArbol.codigoPostal != nuplaBajar.codigoPostal) {
-        return 0;
-    }
-
-    if (nuplaArbol.numeroMesa != nuplaBajar.numeroMesa) {
-        return 0;
-    }
-
-    if (nuplaArbol.circuito != nuplaBajar.circuito) {
-        return 0;
-    }
-
-    // Si la ejecución llega hasta esta línea, significa que pasó todas
-    // las pruebas: las partes X e Y coinciden de forma absoluta.
+    if (nuplaArbol.codigoPostal != nuplaBajar.codigoPostal) {return 0;}
+    if (nuplaArbol.numeroMesa != nuplaBajar.numeroMesa) {return 0;}
+    if (nuplaArbol.circuito != nuplaBajar.circuito) {return 0;}
     return 1; // Son iguales
 }
 
@@ -424,6 +389,7 @@ void BajaABB(ABB *arbol,long dniBuscado,int *exito ){
         *exito = 0;
         return;
     }else{
+        //MAX en la baja del arbol es : 1.5;
 
     }
 }
