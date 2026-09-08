@@ -300,7 +300,7 @@ void BajaLVO(LVO *lista, int dniBaja,int *exito){
 */
 
 typedef struct NodoArbol {
-    int valor;
+    elector valor;
     struct NodoArbol *hi; // Puntero al hijo izquierdo
     struct NodoArbol *hd; // Puntero al hijo derecho
 } NodoArbol;
@@ -310,7 +310,7 @@ typedef struct {
     NodoArbol *raiz; // Puntero de inicio del árbol
 } ABB;
 
-void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito){
+void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padreRetornar){
 
     NodoArbol *p = arbol->raiz;
     NodoArbol *padre = NULL;
@@ -332,12 +332,16 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito){
         *pos = padre;
     }
 
+    *padreRetornar = padre; //Retorno el padre para poder utilizarlo en la baja
+
+
 }
 
 void AltaABB(ABB *arbol, long x , int *exito){
     NodoArbol *pos;
     int encontrado;
-    LocalizarABB(arbol,x,&pos,&encontrado);
+    LocalizarABB(arbol,x,&pos,&encontrado,NULL);
+
     if(encontrado == 1){
         *exito = 0;
         return;
@@ -379,18 +383,38 @@ int CompararNuplasCompletasArbol(elector nuplaArbol, elector nuplaBajar) {
 }
 
 
-void BajaABB(ABB *arbol,long dniBuscado,int *exito ){
+void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
     NodoArbol **pos;
+    NodoArbol **padre;
     int encontrado;
 
-    LocalizarABB(arbol,dniBuscado,pos,&encontrado);
+    LocalizarABB(arbol,dniBuscado,pos,&encontrado,padre);
 
-    if(encontrado == 0){
+    if(encontrado == 1){ //Existe una nupla con ese x
+        if(CompararNuplasCompletasArbol(pos->valor,electorBaja)){ //Comprobamos que sea la nupla
+                //Aca seria lo de modificación para la baja
+                //aca empieza el kilombo :(
+            //Caso 1: tengo un nodo padre con dos hijos
+            if(padre != NULL){ //NO ES LA RAIZ
+                if((pos->valor->dni) < (padre->valor->dni)){
+                    padre->hi=NULL;
+                }else{
+                    padre->hd=NULL;
+                }
+
+            }else{
+
+            }
+
+
+        }else{ //No es la nupla que buscamos
+            *exito = 0;
+            return;
+        }
+
+    }else{ //No existe nupla con ese x
         *exito = 0;
         return;
-    }else{
-        //MAX en la baja del arbol es : 1.5;
-
     }
 }
 
