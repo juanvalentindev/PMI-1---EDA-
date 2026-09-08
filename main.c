@@ -384,16 +384,17 @@ int CompararNuplasCompletasArbol(elector nuplaArbol, elector nuplaBajar) {
 
 
 void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
-    NodoArbol **pos;
-    NodoArbol **padre;
+    NodoArbol *pos;
+    NodoArbol *padre;
     int encontrado;
 
-    LocalizarABB(arbol,dniBuscado,pos,&encontrado,padre);
+    LocalizarABB(arbol,dniBuscado,&pos,&encontrado,&padre);
 
     if(encontrado == 1){ //Existe una nupla con ese x
         if(CompararNuplasCompletasArbol(pos->valor,electorBaja)){ //Comprobamos que sea la nupla
                 //Aca seria lo de modificación para la baja
                 //aca empieza el kilombo :(
+
             //Caso 1: tengo un nodo padre con dos hijos
             if(padre != NULL){ //NO ES LA RAIZ
                 if((pos->valor->dni) < (padre->valor->dni)){
@@ -403,9 +404,9 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                 }
 
             }else{
-
+                arbol->raiz = NULL; //es la raiz
             }
-
+            free(pos);
 
         }else{ //No es la nupla que buscamos
             *exito = 0;
