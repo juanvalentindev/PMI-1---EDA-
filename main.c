@@ -36,6 +36,20 @@ typedef struct {
 |   */
 
 
+int CompararNuplasCompletas(elector nuplaArbol, elector nuplaBajar) {
+    // 1. Verificamos la parte X (Identificador)
+    if (nuplaArbol.dni != nuplaBajar.dni) {return 0;}
+    // 2. Verificamos la parte Y (Resto de los atributos
+    if (CompararNombresNoCaseSensitive(nuplaArbol.nombre, nuplaBajar.nombre) != 0) {return 0;}
+    if (CompararNombresNoCaseSensitive(nuplaArbol.apellido, nuplaBajar.apellido) != 0) {return 0;}
+    if (CompararNombresNoCaseSensitive(nuplaArbol.domicilio, nuplaBajar.domicilio) != 0) {return 0;}
+    // Para tipos numéricos nativos, usamos el operador tradicional
+    if (nuplaArbol.codigoPostal != nuplaBajar.codigoPostal) {return 0;}
+    if (nuplaArbol.numeroMesa != nuplaBajar.numeroMesa) {return 0;}
+    if (nuplaArbol.circuito != nuplaBajar.circuito) {return 0;}
+    return 1; // Son iguales
+}
+
 int CompararNombresNoCaseSensitive(const char *str1, const char *str2) {
     while (*str1 && *str2) {
         // tolower() convierte cada caracter a minúscula en el momento de comparar
@@ -170,8 +184,8 @@ typedef struct {
 void InitLVO(LVO *l){
     Nodo *masInfinito= (Nodo*)malloc(sizeof(Nodo));
 
-    masInfinito=l->dato.dni = MAS_INFINITO;
-    masInfinito=l->siguiente = NULL;
+    masInfinito->dato.dni = MAS_INFINITO;
+    masInfinito->siguiente = NULL;
 
     l->acc = masInfinito;
     l->cur = masInfinito;
@@ -184,7 +198,7 @@ void ResetLVO(LVO *l){
 }
 
 int IsEmptyLVO(LVO l){
-    return (l.acc == NULL);
+    return (l.acc->dato.dni == MAS_INFINITO);
 }
 
 int IsFullLVO(){
@@ -258,16 +272,16 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito){
     }
 }
 
-void BajaLVO(LVO *lista, int dniBaja,int *exito){
+void BajaLVO(LVO *lista, elector nuplaBaja,int *exito){
     Nodo *pos;
     int encontrado;
-    LocalizarLVO(lista,dniBaja,&pos,&encontrado);
 
-    if (encontrado == 0){
-        *exito = 0;
-        return;
-    }else{
-        if(pos == lista->acc){
+    LocalizarLVO(lista,nuplaBaja.dni,&pos,&encontrado);
+
+    if (encontrado == 1){
+        if(CompararNuplasCompletas(pos->dato,nuplaBaja) == 1)){
+
+            if(pos == lista->acc){
             //Supress en la primera posición
             lista->acc=pos->siguiente;
 
@@ -277,18 +291,29 @@ void BajaLVO(LVO *lista, int dniBaja,int *exito){
             free(lista->cur);
             lista->aux = lista->acc;
             lista->cur = lista->acc;*/
-        }else{
+
+            }else{
             //Supress en el medio o primera posición
             lista->aux->siguiente = pos->siguiente;
+
             /*
             lista->cursor = lista->cursor->siguiente;
             free(lista->aux->siguiente);
             lista->aux->siguiente = lista->cur;*/
+
+            }
+            free(pos);
+            *exito = 1;
         }
+        *exito = 0; //El dni coincidia pero la nupla no,
+
+
+
+    }else{
+        *exito = 0;
+        return;
     }
 
-    free(pos);
-    *exito = 1;
 }
 
 /*
@@ -371,20 +396,6 @@ void AltaABB(ABB *arbol, elector nuevoElector , int *exito){
     }
 }
 
-int CompararNuplasCompletasArbol(elector nuplaArbol, elector nuplaBajar) {
-    // 1. Verificamos la parte X (Identificador)
-    if (nuplaArbol.dni != nuplaBajar.dni) {return 0;}
-    // 2. Verificamos la parte Y (Resto de los atributos
-    if (CompararNombresNoCaseSensitive(nuplaArbol.nombre, nuplaBajar.nombre) != 0) {return 0;}
-    if (CompararNombresNoCaseSensitive(nuplaArbol.apellido, nuplaBajar.apellido) != 0) {return 0;}
-    if (CompararNombresNoCaseSensitive(nuplaArbol.domicilio, nuplaBajar.domicilio) != 0) {return 0;}
-    // Para tipos numéricos nativos, usamos el operador tradicional
-    if (nuplaArbol.codigoPostal != nuplaBajar.codigoPostal) {return 0;}
-    if (nuplaArbol.numeroMesa != nuplaBajar.numeroMesa) {return 0;}
-    if (nuplaArbol.circuito != nuplaBajar.circuito) {return 0;}
-    return 1; // Son iguales
-}
-
 Nodo * hijoNoNULLPos(NodoArbol *nodo){
     if(nodo->hi!=NULL){
         return nodo->hi;
@@ -403,7 +414,7 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
     LocalizarABB(arbol,dniBuscado,&pos,&encontrado,&padre);
 
     if(encontrado == 1){ //Existe una nupla con ese x
-        if(CompararNuplasCompletasArbol(pos->valor,electorBaja)){ //Comprobamos que sea la nupla
+        if(CompararNuplasCompletas(pos->valor,electorBaja)){ //Comprobamos que sea la nupla
                 //Aca seria lo de modificación para la baja
                 //aca empieza el kilombo :(
             //Caso 1: tengo un nodo padre con dos hijos
