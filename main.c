@@ -342,7 +342,7 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
 
     while(p != NULL && p->valor.dni != x){
         padre = p;
-        if(p->valor < x){
+        if(p->valor.dni < x){
             p = p->hd;
         }else{
             p = p->hi;
@@ -360,10 +360,8 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
     if(padreRetornar !=NULL){
         *padreRetornar = padre; //Retorno el padre para poder utilizarlo en la baja
     }
-
-
-
 }
+
 
 void AltaABB(ABB *arbol, elector nuevoElector , int *exito){
     NodoArbol *pos;
@@ -411,7 +409,7 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
     NodoArbol *padre;
     int encontrado;
 
-    LocalizarABB(arbol,dniBuscado,&pos,&encontrado,&padre);
+    LocalizarABB(arbol,electorBaja.dni,&pos,&encontrado,&padre);
 
     if(encontrado == 1){ //Existe una nupla con ese x
         if(CompararNuplasCompletas(pos->valor,electorBaja)){ //Comprobamos que sea la nupla
@@ -430,10 +428,10 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                 }
                 free(pos);
 
-            }else if(pos->hd == NULL || pos->hi = NULL){ //Caso 2: el nodo que queremos eliminar tiene hijos por una de sus ramas
+            }else if(pos->hd == NULL || pos->hi == NULL){ //Caso 2: el nodo que queremos eliminar tiene hijos por una de sus ramas
                  if (padre != NULL){
-                    if((pos->valor->dni) < (padre->valor->dni)){
-                        padre->hi=hiNoNULLPos(pos);
+                    if((pos->valor.dni) < (padre->valor.dni)){
+                        padre->hi=hijoNoNULLPos(pos);
                     }else{
                         padre->hd=hijoNoNULLPos(pos);
                     }
@@ -452,7 +450,7 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
 
                 if (padreAux == pos){
                     //Aux no tenia hijos a izquierda
-                    padreAux->hd = aux->hd
+                    padreAux->hd = aux->hd;
                 }else{
                     //Aux era un hijo izquierdo profundo por lo cual , su padre adopta a posible hijo derecho
                     padreAux->hi = aux->hd;
@@ -474,6 +472,19 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
         return;
     }
 }
+
+
+/*
+===========
+Memorización
+==========
+*/
+
+int memorizarDesdeArchivo(){
+
+
+}
+
 
 int main(){
     //Definición de Estructuras
