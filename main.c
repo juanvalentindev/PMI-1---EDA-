@@ -35,26 +35,11 @@ typedef struct {
 |
 |   */
 
-
-int CompararNuplasCompletas(elector nuplaArbol, elector nuplaBajar) {
-    // 1. Verificamos la parte X (Identificador)
-    if (nuplaArbol.dni != nuplaBajar.dni) {return 0;}
-    // 2. Verificamos la parte Y (Resto de los atributos
-    if (CompararNombresNoCaseSensitive(nuplaArbol.nombre, nuplaBajar.nombre) != 0) {return 0;}
-    if (CompararNombresNoCaseSensitive(nuplaArbol.apellido, nuplaBajar.apellido) != 0) {return 0;}
-    if (CompararNombresNoCaseSensitive(nuplaArbol.domicilio, nuplaBajar.domicilio) != 0) {return 0;}
-    // Para tipos numéricos nativos, usamos el operador tradicional
-    if (nuplaArbol.codigoPostal != nuplaBajar.codigoPostal) {return 0;}
-    if (nuplaArbol.numeroMesa != nuplaBajar.numeroMesa) {return 0;}
-    if (nuplaArbol.circuito != nuplaBajar.circuito) {return 0;}
-    return 1; // Son iguales
-}
-
 int CompararNombresNoCaseSensitive(const char *str1, const char *str2) {
     while (*str1 && *str2) {
         // tolower() convierte cada caracter a minúscula en el momento de comparar
         if (tolower((unsigned char)*str1) != tolower((unsigned char)*str2)) {
-            return false;
+            return 0;
         }
         str1++;
         str2++;
@@ -66,6 +51,22 @@ int CompararNombresNoCaseSensitive(const char *str1, const char *str2) {
     return 0;
    }
 }
+
+int CompararNuplasCompletas(elector nuplaArbol, elector nuplaBajar) {
+    // Verificamos la parte X (Identificador)
+    if (nuplaArbol.dni != nuplaBajar.dni) {return 0;}
+    // Verificamos la parte Y (Resto de los atributos
+    if (CompararNombresNoCaseSensitive(nuplaArbol.nombre, nuplaBajar.nombre) == 0) {return 0;}
+    if (CompararNombresNoCaseSensitive(nuplaArbol.apellido, nuplaBajar.apellido) == 0) {return 0;}
+    if (CompararNombresNoCaseSensitive(nuplaArbol.domicilio, nuplaBajar.domicilio) == 0) {return 0;}
+    // Para tipos numéricos nativos, usamos el operador tradicional
+    if (nuplaArbol.codigoPostal != nuplaBajar.codigoPostal) {return 0;}
+    if (nuplaArbol.numeroMesa != nuplaBajar.numeroMesa) {return 0;}
+    if (nuplaArbol.circuito != nuplaBajar.circuito) {return 0;}
+    return 1; // Son iguales
+}
+
+
 
 /*
  =====================================
@@ -278,9 +279,8 @@ void BajaLVO(LVO *lista, elector nuplaBaja,int *exito){
 
     LocalizarLVO(lista,nuplaBaja.dni,&pos,&encontrado);
 
-    if (encontrado == 1){
-        if(CompararNuplasCompletas(pos->dato,nuplaBaja) == 1)){
-
+    if(encontrado == 1){
+        if(CompararNuplasCompletas(pos->dato,nuplaBaja) == 1){
             if(pos == lista->acc){
             //Supress en la primera posición
             lista->acc=pos->siguiente;
@@ -394,7 +394,7 @@ void AltaABB(ABB *arbol, elector nuevoElector , int *exito){
     }
 }
 
-Nodo * hijoNoNULLPos(NodoArbol *nodo){
+NodoArbol *hijoNoNULLPos(NodoArbol *nodo){
     if(nodo->hi!=NULL){
         return nodo->hi;
     }else{
@@ -418,7 +418,7 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
             //Caso 1: tengo un nodo padre con dos hijos
             if(pos->hi != NULL && pos->hd != NULL){
                  if(padre != NULL){ //NO ES LA RAIZ
-                    if((pos->valor->dni) < (padre->valor->dni)){
+                    if((pos->valor.dni) < (padre->valor.dni)){
                         padre->hi=NULL;
                     }else{
                         padre->hd=NULL;
@@ -486,11 +486,67 @@ int memorizarDesdeArchivo(){
 }
 
 
-int main(){
-    //Definición de Estructuras
-    //Lista secuencialmente ordenadas
-    lso listaSecuencialOrdenada;
+  int main() {
+    // Inicializamos el árbol vacío
+    ABB miArbol;
+    miArbol.raiz = NULL;
+    int exito;
+
+    // --- 1. GENERACIÓN DE DATOS DE PRUEBA ---
+    // Usamos DNIs pequeños y redondos para que mentalmente te sea fácil graficar el árbol.
+    elector e50 = {50000000, "Ana", "Gomez", "Calle A 123", 5700, 10, 1040};
+    elector e30 = {30000000, "Luis", "Perez", "Calle B 456", 5700, 10, 1040};
+    elector e70 = {70000000, "Maria", "Sosa", "Calle C 789", 5700, 10, 1040};
+    elector e60 = {60000000, "Juan", "Diaz", "Calle D 101", 5700, 10, 1040};
+    elector e80 = {80000000, "Pedro", "Luna", "Calle E 202", 5700, 10, 1040};
+
+    // Elector trampa: Mismo DNI que e70, pero distinto nombre.
+    elector e70_falso = {70000000, "FALSO", "Sosa", "Calle C 789", 5700, 10, 1040};
+    // Elector inexistente
+    elector e99 = {99000000, "Nadie", "Ninguno", "Nada", 0, 0, 0};
+
+    printf("=== INICIANDO PRUEBAS DE ABB ===\n\n");
+
+    // --- 2. PRUEBAS DE ALTA ---
+    printf("--- ALTAS ---\n");
+    AltaABB(&miArbol, e50, &exito);
+    printf("Alta Raiz (DNI 50M): %s\n", exito == 1 ? "EXITO" : "FALLO");
+
+    AltaABB(&miArbol, e30, &exito);
+    printf("Alta Hijo Izq (DNI 30M): %s\n", exito == 1 ? "EXITO" : "FALLO");
+
+    AltaABB(&miArbol, e70, &exito);
+    printf("Alta Hijo Der (DNI 70M): %s\n", exito == 1 ? "EXITO" : "FALLO");
+
+    AltaABB(&miArbol, e60, &exito);
+    AltaABB(&miArbol, e80, &exito);
+    printf("Alta Nodos Profundos (60M y 80M): EXITO\n");
+
+    AltaABB(&miArbol, e50, &exito); // Intento de duplicado
+    printf("Alta REPETIDO (DNI 50M): %s (Esperado: FALLO)\n\n", exito == 1 ? "EXITO" : "FALLO");
+
+
+    // --- 3. PRUEBAS DE BAJA ---
+    printf("--- BAJAS ---\n");
+
+    // Baja Fallida: Nupla no coincide
+    BajaABB(&miArbol, e70_falso, &exito);
+    printf("Baja Nupla Incorrecta (DNI 70M): %s (Esperado: FALLO)\n", exito == 1 ? "EXITO" : "FALLO");
+
+    // Baja Fallida: No existe
+    BajaABB(&miArbol, e99, &exito);
+    printf("Baja Inexistente (DNI 99M): %s (Esperado: FALLO)\n", exito == 1 ? "EXITO" : "FALLO");
+
+    // Baja Exitosa: Nodo Hoja (Sin hijos)
+    BajaABB(&miArbol, e80, &exito);
+    printf("Baja Nodo Hoja (DNI 80M): %s (Esperado: EXITO)\n", exito == 1 ? "EXITO" : "FALLO");
+
+    // Baja Exitosa: Nodo con 2 hijos (Prueba la política de reemplazo)
+    // El nodo 50 (Raíz) tiene a 30 por izquierda y a 70 por derecha.
+    BajaABB(&miArbol, e50, &exito);
+    printf("Baja Nodo 2 Hijos / Raiz (DNI 50M): %s (Esperado: EXITO)\n", exito == 1 ? "EXITO" : "FALLO");
 
     return 0;
-
 }
+
+
