@@ -33,6 +33,11 @@ typedef struct {
 |
 |   */
 
+elector bancoElectores[ELECTORES_ESPERADOS];
+int marcas[ELECTORES_ESPERADOS]; // 1 = Está en la estructura | 0 = No está (o fue dado de baja)
+int totalHistorico = 0;
+
+
 
 int CompararNombresNoCaseSensitive(const char *str1, const char *str2) {
     while (*str1 && *str2) {
@@ -119,39 +124,47 @@ void LocalizarLSO(lso *lista, int *pos, long dni, int *exito, float *costoConsul
     }
 }
 
-//Baja LSO
-void BajaLSO(lso *lista, elector eBorrar, int *exito, float *costoCorrimientosLSO){
+void EvocarLSO(lso *lista, long dniBuscar, elector *eRecuperado, int *exito, float *costoConsultasLSO) {
     int pos;
 
-    // 1. Buscamos por la clave X (DNI)
-    LocalizarLSO(lista, &pos, eBorrar.dni, exito, costoCorrimientosLSO);
+    LocalizarLSO(lista, &pos, dniBuscar, exito, costoConsultasLSO);
+    if (*exito == 1) {
+        *eRecuperado = lista->electores[pos];
+    }
+}
 
-    // 2. Si se encontró el DNI, confirmamos por código comparando toda la nupla
+// Baja LSO
+void BajaLSO(lso *lista, elector eBorrar, int *exito, float *costoCorrimientosLSO){
+    int pos;
+    float costoConsultaInterna = 0; // Variable auxiliar descartable
+
+    // 1. Buscamos por DNI sin alterar el acumulador de corrimientos
+    LocalizarLSO(lista, &pos, eBorrar.dni, exito, &costoConsultaInterna);
+
+    // 2. Confirmamos por código comparando toda la nupla
     if (*exito == 1) {
         elector almacenado = lista->electores[pos];
 
-        // AQUÍ INVOCAMOS A TU FUNCIÓN RECICLABLE
         if (CompararNuplas(almacenado, eBorrar) == 1) {
-
-            // Si todo coincide, hacemos la baja con sus corrimientos
             for (int j = pos; j < lista->cantidad - 1; j++) {
                 lista->electores[j] = lista->electores[j + 1];
                 (*costoCorrimientosLSO)++;
             }
             lista->cantidad--;
             *exito = 1;
-
         } else {
-            *exito = 0; // Fracasa porque el resto de la nupla no coincide
+            *exito = 0; // Fracasa: la nupla no coincide
         }
     }
 }
-//Alta LSO
+
+// Alta LSO corregida
 void AltaLSO(lso *lista, elector nuevoElector, int *exito, float *costoCorrimientosLSO){
     int pos;
     int exitoPrima;
+    float costoConsultaInterna = 0; // Variable auxiliar descartable
 
-    LocalizarLSO(lista, &pos, nuevoElector.dni, &exitoPrima, costoCorrimientosLSO);
+    LocalizarLSO(lista, &pos, nuevoElector.dni, &exitoPrima, &costoConsultaInterna);
 
     if (exitoPrima == 1) {
         *exito = 2; // Repetido
@@ -165,6 +178,107 @@ void AltaLSO(lso *lista, elector nuevoElector, int *exito, float *costoCorrimien
         lista->electores[pos] = nuevoElector;
         lista->cantidad++;
         *exito = 1;
+    }
+}
+//Funcion auxiliar de LSO para obtener los costos de Evocar
+void EvaluarCostosEvocacionLSO(lso *lista, elector banco[], int marcas[], int total) {
+    float costoTotalExito = 0;
+    float costoMaximoExito = 0;
+    int cantExitos = 0;
+
+    float costoTotalFracaso = 0;
+    float costoMaximoFracaso = 0;
+    int cantFracasos = 0;
+
+    for (int i = 0; i < total; i++) {
+        int pos;
+        int exito;
+        float costoConsulta = 0;
+
+        // Invocamos a la localización midiendo el costo individual de esta consulta
+        LocalizarLSO(lista, &pos, banco[i].dni, &exito, &costoConsulta);
+
+        if (marcas[i] == 1) {
+            // Caso: Evocación Exitosa (debería estar en la estructura)
+            costoTotalExito += costoConsulta;
+            if (costoConsulta > costoMaximoExito) {
+                costoMaximoExito = costoConsulta;
+            }
+            cantExitos++;
+        } else {
+            // Caso: Evocación No Exitosa (fue dado de baja o rechazado)
+            costoTotalFracaso += costoConsulta;
+            if (costoConsulta > costoMaximoFracaso) {
+                costoMaximoFracaso = costoConsulta;
+            }
+            cantFracasos++;
+        }
+    }
+
+    printf("\n--- METRICAS DE CONSULTA A POSTERIORI (LSO) ---\n");
+    if (cantExitos > 0) {
+        printf("Evocacion Exitosa:\n");
+        printf("  - Costo Medio (Esperado): %.2f celdas\n", costoTotalExito / cantExitos);
+        printf("  - Peor Escenario (Maximo): %.2f celdas\n", costoMaximoExito);
+    }
+    if (cantFracasos > 0) {
+        printf("Evocacion No Exitosa (Fracaso):\n");
+        printf("  - Costo Medio (Esperado): %.2f celdas\n", costoTotalFracaso / cantFracasos);
+        printf("  - Peor Escenario (Maximo): %.2f celdas\n", costoMaximoFracaso);
+    }
+}
+
+void MostrarEstructuraLSO(lso *lista) {
+    if (lista->cantidad == 0) {
+        printf("\nLa estructura LSO se encuentra vacia.\n");
+        return;
+    }
+
+    printf("\n=== PADRON DE ELECTORES (LSO) - Total: %d ===\n", lista->cantidad);
+    for (int i = 0; i < lista->cantidad; i++) {
+        printf("[%d] DNI: %ld | %s | %s | CP: %d | Mesa: %d | Circuito: %d\n",
+               i + 1,
+               lista->electores[i].dni,
+               lista->electores[i].nombreApellido,
+               lista->electores[i].domicilio,
+               lista->electores[i].codigoPostal,
+               lista->electores[i].numeroMesa,
+               lista->electores[i].circuito);
+
+        // Paginado cada 20 registros
+        if ((i + 1) % 20 == 0 && (i + 1) < lista->cantidad) {
+            printf("\n--- Presione ENTER para ver los siguientes electores ---");
+            while (getchar() != '\n'); // Limpia el buffer y espera un Enter
+        }
+    }
+    printf("==============================================\n");
+}
+
+void ActualizarMarca(long dni, elector e, int operacion, int exito) {
+    // Si la operación fracasó, no afecta las marcas de pertenencia
+    if (exito != 1) return;
+
+    if (operacion == 1) { // Alta exitosa
+        // Buscar si ya existía en el historial
+        for (int i = 0; i < totalHistorico; i++) {
+            if (bancoElectores[i].dni == dni) {
+                marcas[i] = 1;
+                return;
+            }
+        }
+        // Si es nuevo, lo agregamos al banco
+        if (totalHistorico < ELECTORES_ESPERADOS) {
+            bancoElectores[totalHistorico] = e;
+            marcas[totalHistorico] = 1;
+            totalHistorico++;
+        }
+    } else if (operacion == 2) { // Baja exitosa
+        for (int i = 0; i < totalHistorico; i++) {
+            if (bancoElectores[i].dni == dni) {
+                marcas[i] = 0; // Desmarcado
+                return;
+            }
+        }
     }
 }
 
@@ -291,10 +405,10 @@ void BajaLVO(LVO *lista, elector nuplaBaja,int *exito){
     LocalizarLVO(lista,nuplaBaja.dni,&pos,&encontrado);
 
     if(encontrado == 1){
-        if(CompararNuplasCompletas(pos->dato,nuplaBaja) == 1){
+        if(CompararNuplas(pos->dato,nuplaBaja) == 1){
             if(pos == lista->acc){
             //Supress en la primera posición
-            lista->acc=pos->siguiente;
+            lista->acc = pos->siguiente;
 
             /*
             Supuestamente esto esta mal ?¿
@@ -423,7 +537,7 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
     LocalizarABB(arbol,electorBaja.dni,&pos,&encontrado,&padre);
 
     if(encontrado == 1){ //Existe una nupla con ese x
-        if(CompararNuplasCompletas(pos->valor,electorBaja)){ //Comprobamos que sea la nupla
+        if(CompararNuplas(pos->valor,electorBaja)){ //Comprobamos que sea la nupla
                 //Aca seria lo de modificación para la baja
                 //aca empieza el kilombo :(
             //Caso 1: tengo un nodo padre con dos hijos
@@ -498,6 +612,93 @@ int memorizarDesdeArchivo(){
 
 
   int main() {
+    //Prueba LSO
+        lso miLista;
+    miLista.cantidad = 0;
+
+    int pos;
+    float costoConsultasLSO = 0;
+    float costoCorrimientosLSO = 0;
+
+    FILE *archivo = fopen("Operaciones_Padron.txt", "r");
+    if (archivo == NULL) {
+        printf("Error: No se pudo abrir el archivo 'Operaciones_Padron.txt'.\n");
+        return 1;
+    }
+
+    printf("Procesando archivo...\n");
+
+    char buffer[120];
+    int operacion;
+    elector eTemp;
+    elector eEvocado;
+    int exito;
+
+    while (fgets(buffer, sizeof(buffer), archivo) != NULL) {
+        if (sscanf(buffer, "%d", &operacion) != 1) continue;
+
+        if (operacion == 1 || operacion == 2) {
+            fgets(buffer, sizeof(buffer), archivo);
+            sscanf(buffer, "%ld", &eTemp.dni);
+
+            fgets(buffer, sizeof(buffer), archivo);
+            buffer[strcspn(buffer, "\r\n")] = 0;
+            strcpy(eTemp.nombreApellido, buffer);
+
+            fgets(buffer, sizeof(buffer), archivo);
+            buffer[strcspn(buffer, "\r\n")] = 0;
+            strcpy(eTemp.domicilio, buffer);
+
+            fgets(buffer, sizeof(buffer), archivo);
+            sscanf(buffer, "%d", &eTemp.codigoPostal);
+
+            fgets(buffer, sizeof(buffer), archivo);
+            sscanf(buffer, "%d", &eTemp.numeroMesa);
+
+            fgets(buffer, sizeof(buffer), archivo);
+            sscanf(buffer, "%d", &eTemp.circuito);
+
+            if (operacion == 1) {
+                AltaLSO(&miLista, eTemp, &exito, &costoCorrimientosLSO);
+            } else {
+                BajaLSO(&miLista, eTemp, &exito, &costoCorrimientosLSO);
+            }
+            ActualizarMarca(eTemp.dni, eTemp, operacion, exito);
+
+        } else if (operacion == 3) {
+            fgets(buffer, sizeof(buffer), archivo);
+            sscanf(buffer, "%ld", &eTemp.dni);
+
+            // Invocamos a EvocarLSO formalmente
+            EvocarLSO(&miLista, eTemp.dni, &eEvocado, &exito, &costoConsultasLSO);
+        }
+    }
+
+    fclose(archivo);
+
+    //Prueba del localizar
+    elector e1 = {80000000, "Pedro Luna", "Calle E 202", 5700, 10, 1040};
+    LocalizarLSO(&miLista, &pos, e1.dni, &exito, &costoConsultasLSO);
+
+    // Muestra de costos obtenidos tras la lectura del archivo
+    printf("\n=== RESULTADOS DE LA LISTA SECUENCIAL ORDENADA (LSO) ===\n");
+    printf("Cantidad final de electores: %d\n", miLista.cantidad);
+    printf("Costo total de Consultas del archivo (Celdas): %.2f\n", costoConsultasLSO);
+    printf("Costo total de Modificaciones (Corrimientos): %.2f\n", costoCorrimientosLSO);
+    printf("========================================================\n");
+
+    // Ejecución de la evaluación formal a posteriori mediante el vector de marcas
+    EvaluarCostosEvocacionLSO(&miLista, bancoElectores, marcas, totalHistorico);
+
+    // Prueba de la visualización paginada
+    printf("\nPresione ENTER para ver la estructura cargada...");
+    while (getchar() != '\n');
+    MostrarEstructuraLSO(&miLista);
+
+
+
+    //Fin de prueba LSO
+
     // Inicializamos el árbol vacío
     ABB miArbol;
     miArbol.raiz = NULL;
@@ -505,16 +706,16 @@ int memorizarDesdeArchivo(){
 
     // --- 1. GENERACIÓN DE DATOS DE PRUEBA ---
     // Usamos DNIs pequeños y redondos para que mentalmente te sea fácil graficar el árbol.
-    elector e50 = {50000000, "Ana", "Gomez", "Calle A 123", 5700, 10, 1040};
-    elector e30 = {30000000, "Luis", "Perez", "Calle B 456", 5700, 10, 1040};
-    elector e70 = {70000000, "Maria", "Sosa", "Calle C 789", 5700, 10, 1040};
-    elector e60 = {60000000, "Juan", "Diaz", "Calle D 101", 5700, 10, 1040};
-    elector e80 = {80000000, "Pedro", "Luna", "Calle E 202", 5700, 10, 1040};
+    elector e50 = {50000000, "Ana Gomez", "Calle A 123", 5700, 10, 1040};
+    elector e30 = {30000000, "Luis Perez", "Calle B 456", 5700, 10, 1040};
+    elector e70 = {70000000, "Maria Sosa", "Calle C 789", 5700, 10, 1040};
+    elector e60 = {60000000, "Juan Diaz", "Calle D 101", 5700, 10, 1040};
+    elector e80 = {80000000, "Pedro Luna", "Calle E 202", 5700, 10, 1040};
 
     // Elector trampa: Mismo DNI que e70, pero distinto nombre.
-    elector e70_falso = {70000000, "FALSO", "Sosa", "Calle C 789", 5700, 10, 1040};
+    elector e70_falso = {70000000, "FALSO Sosa", "Calle C 789", 5700, 10, 1040};
     // Elector inexistente
-    elector e99 = {99000000, "Nadie", "Ninguno", "Nada", 0, 0, 0};
+    elector e99 = {99000000, "Nadie Ninguno", "Nada", 0, 0, 0};
 
     printf("=== INICIANDO PRUEBAS DE ABB ===\n\n");
 
@@ -558,6 +759,7 @@ int memorizarDesdeArchivo(){
     printf("Baja Nodo 2 Hijos / Raiz (DNI 50M): %s (Esperado: EXITO)\n", exito == 1 ? "EXITO" : "FALLO");
 
     return 0;
+
 }
 
 
