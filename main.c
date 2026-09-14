@@ -545,8 +545,10 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                  if(padre != NULL){ //NO ES LA RAIZ
                     if((pos->valor.dni) < (padre->valor.dni)){
                         padre->hi=NULL;
-                    }else{
+                    }else{ // los demas casos 0,5
                         padre->hd=NULL;
+
+
                     }
                 }else{
                     arbol->raiz = NULL; //es la raiz
@@ -563,7 +565,8 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                  }else{
                     arbol->raiz = hijoNoNULLPos(pos);
                  }
-                 free(pos);                   //Eliminamos izquierda.
+                 free(pos);
+                                   //Eliminamos izquierda.
             } else { //Caso con 2 hijos, el mas heavy metal chabon
                 aux = pos->hd; //Doy un paso a al derecha
 
@@ -571,14 +574,16 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                     padreAux = aux;
                     aux = aux->hi;
                 }
+
                 pos->valor = aux->valor;
+                //+1 costo
 
                 if (padreAux == pos){
                     //Aux no tenia hijos a izquierda
                     padreAux->hd = aux->hd;
                 }else{
                     //Aux era un hijo izquierdo profundo por lo cual , su padre adopta a posible hijo derecho
-                    padreAux->hi = aux->hd;
+                    padreAux->hi = aux->hd; //0,5 costo
                 }
 
                 free(aux);
@@ -604,6 +609,7 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
 Memorización
 ==========
 */
+
 
 int memorizarDesdeArchivo(){
 
@@ -757,6 +763,8 @@ int memorizarDesdeArchivo(){
     // El nodo 50 (Raíz) tiene a 30 por izquierda y a 70 por derecha.
     BajaABB(&miArbol, e50, &exito);
     printf("Baja Nodo 2 Hijos / Raiz (DNI 50M): %s (Esperado: EXITO)\n", exito == 1 ? "EXITO" : "FALLO");
+
+int main() {
 
     return 0;
 
