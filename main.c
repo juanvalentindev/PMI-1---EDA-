@@ -611,9 +611,79 @@ Memorización
 */
 
 
-int memorizarDesdeArchivo(){
+void MemorizacionLVO(LVO *lista) {
+    FILE *archivo = fopen("Operaciones_Padron.txt", "r"); //
 
+    if (archivo == NULL) {
+        printf("Error: No se pudo abrir Operaciones_Padron.txt\n"); //
+        return;
+    }
 
+    char linea[150];
+
+    // Leemos siempre la primera línea de cada bloque (el código de operación)
+    while (fgets(linea, sizeof(linea), archivo) != NULL) {
+
+        int codigoOp = atoi(linea); // Selector condicional: 1, 2 o 3
+
+        // --- BLOQUE DE 7 LÍNEAS (Altas y Bajas) ---
+        if (codigoOp == 1 || codigoOp == 2) {
+            elector nupla;
+            int exito;
+
+            // Línea 2: DNI[cite: 4]
+            fgets(linea, sizeof(linea), archivo);
+            nupla.dni = atol(linea);
+
+            // Línea 3: Nombre y Apellido agrupados[cite: 4]
+            fgets(linea, sizeof(linea), archivo);
+            linea[strcspn(linea, "\r\n")] = 0; // Limpiamos el salto de línea
+            strcpy(nupla.nombre, linea); // *Asumo que unificaste este campo en la estructura original
+
+            // Línea 4: Domicilio[cite: 4]
+            fgets(linea, sizeof(linea), archivo);
+            linea[strcspn(linea, "\r\n")] = 0;
+            strcpy(nupla.domicilio, linea);
+
+            // Línea 5: Código Postal[cite: 4]
+            fgets(linea, sizeof(linea), archivo);
+            nupla.codigoPostal = atoi(linea);
+
+            // Línea 6: Mesa[cite: 4]
+            fgets(linea, sizeof(linea), archivo);
+            nupla.numeroMesa = atoi(linea);
+
+            // Línea 7: Circuito[cite: 4]
+            fgets(linea, sizeof(linea), archivo);
+            nupla.circuito = atoi(linea);
+
+            // Ejecución de la operación
+            if (codigoOp == 1) {
+                AltaLVO(lista, nupla, &exito);
+                //Aqui colocar los costos de la alta
+            } else if (codigoOp == 2) { //[cite: 4]
+                BajaLVO(lista, nupla, &exito);
+                //Aqui colocar los costos de la  baja
+            }
+
+        // --- BLOQUE DE 2 LÍNEAS (Evocación) ---
+        } else if (codigoOp == 3) { //[cite: 4]
+            // Línea 2: Únicamente el DNI[cite: 4]
+            fgets(linea, sizeof(linea), archivo);
+            fgets(linea, sizeof(linea), archivo);
+
+            long dniEvocar = atol(linea);
+
+            Nodo *pos;
+            int encontrado;
+            //Implementar la evocación
+
+            // DIRECTIVA COMPAÑERO: Acá sumar costos de evocación (+1 por celda consultada en LocalizarLVO)
+        }
+    }
+
+    fclose(archivo);
+    printf("Estructura LVO memorizada desde Operaciones_Padron.txt exitosamente.\n"); //[cite: 4]
 }
 
 
@@ -763,11 +833,5 @@ int memorizarDesdeArchivo(){
     // El nodo 50 (Raíz) tiene a 30 por izquierda y a 70 por derecha.
     BajaABB(&miArbol, e50, &exito);
     printf("Baja Nodo 2 Hijos / Raiz (DNI 50M): %s (Esperado: EXITO)\n", exito == 1 ? "EXITO" : "FALLO");
-
-int main() {
-
-    return 0;
-
 }
-
 
