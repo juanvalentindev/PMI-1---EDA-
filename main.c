@@ -37,6 +37,35 @@ elector bancoElectores[ELECTORES_ESPERADOS];
 int marcas[ELECTORES_ESPERADOS]; // 1 = Está en la estructura | 0 = No está (o fue dado de baja)
 int totalHistorico = 0;
 
+typedef struct {
+    int cantidad;
+    float costo_acu;
+    float costo_max;
+} MetricasOp;
+
+typedef struct {
+    MetricasOp alta;
+    MetricasOp baja;
+    MetricasOp evocar_exito;
+    MetricasOp evocar_fracaso;
+} Estadisticas;
+
+// Función para inicializar los contadores en cero
+void InicializarMetricas(MetricasOp *m) {
+    m->cantidad = 0;
+    m->costo_acu = 0.0;
+    m->costo_max = 0.0;
+}
+
+// Función para registrar el costo de UNA operación individual
+void RegistrarCosto(MetricasOp *m, float costo_individual) {
+    m->cantidad++;
+    m->costo_acu += costo_individual;
+    if (costo_individual > m->costo_max) {
+        m->costo_max = costo_individual; // Actualizamos el peor caso (Máximo)
+    }
+}
+
 
 
 int CompararNombresNoCaseSensitive(const char *str1, const char *str2) {
@@ -611,155 +640,126 @@ int memorizarDesdeArchivo(){
 }
 
 
-  int main() {
-    //Prueba LSO
-        lso miLista;
+int main() {
+    lso miLista;
     miLista.cantidad = 0;
 
-    int pos;
-    float costoConsultasLSO = 0;
-    float costoCorrimientosLSO = 0;
+    // 1. Inicializamos todas nuestras estadísticas para la LSO
+    Estadisticas statsLSO;
+    InicializarMetricas(&statsLSO.alta);
+    InicializarMetricas(&statsLSO.baja);
+    InicializarMetricas(&statsLSO.evocar_exito);
+    InicializarMetricas(&statsLSO.evocar_fracaso);
 
     FILE *archivo = fopen("Operaciones_Padron.txt", "r");
     if (archivo == NULL) {
-        printf("Error: No se pudo abrir el archivo 'Operaciones_Padron.txt'.\n");
+        printf("Error: No se pudo abrir el archivo.\n");
         return 1;
     }
 
     printf("Procesando archivo...\n");
 
-    char buffer[120];
+    char buffer[150];
     int operacion;
     elector eTemp;
-    elector eEvocado;
     int exito;
 
+    // 2. LECTURA DEL ARCHIVO (El "Menú" automático)
     while (fgets(buffer, sizeof(buffer), archivo) != NULL) {
+
+        // Leemos el código de operación (1, 2 o 3)
         if (sscanf(buffer, "%d", &operacion) != 1) continue;
 
-        if (operacion == 1 || operacion == 2) {
-            fgets(buffer, sizeof(buffer), archivo);
-            sscanf(buffer, "%ld", &eTemp.dni);
+        // Variable para medir el costo de ESTA operación en particular
+        float costoOp = 0;
 
-            fgets(buffer, sizeof(buffer), archivo);
-            buffer[strcspn(buffer, "\r\n")] = 0;
-            strcpy(eTemp.nombreApellido, buffer);
+        switch(operacion) {
+            case 1: // ALTA
+                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%ld", &eTemp.dni);
+                fgets(buffer, sizeof(buffer), archivo); buffer[strcspn(buffer, "\r\n")] = 0; strcpy(eTemp.nombreApellido, buffer);
+                fgets(buffer, sizeof(buffer), archivo); buffer[strcspn(buffer, "\r\n")] = 0; strcpy(eTemp.domicilio, buffer);
+                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.codigoPostal);
+                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.numeroMesa);
+                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.circuito);
 
-            fgets(buffer, sizeof(buffer), archivo);
-            buffer[strcspn(buffer, "\r\n")] = 0;
-            strcpy(eTemp.domicilio, buffer);
+                // Mandamos a dar de alta y registramos sus corrimientos
+                AltaLSO(&miLista, eTemp, &exito, &costoOp);
+                RegistrarCosto(&statsLSO.alta, costoOp);
+                break;
 
-            fgets(buffer, sizeof(buffer), archivo);
-            sscanf(buffer, "%d", &eTemp.codigoPostal);
+            case 2: // BAJA
+                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%ld", &eTemp.dni);
+                fgets(buffer, sizeof(buffer), archivo); buffer[strcspn(buffer, "\r\n")] = 0; strcpy(eTemp.nombreApellido, buffer);
+                fgets(buffer, sizeof(buffer), archivo); buffer[strcspn(buffer, "\r\n")] = 0; strcpy(eTemp.domicilio, buffer);
+                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.codigoPostal);
+                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.numeroMesa);
+                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.circuito);
 
-            fgets(buffer, sizeof(buffer), archivo);
-            sscanf(buffer, "%d", &eTemp.numeroMesa);
+                // Mandamos a dar de baja y registramos sus corrimientos
+                BajaLSO(&miLista, eTemp, &exito, &costoOp);
+                RegistrarCosto(&statsLSO.baja, costoOp);
+                break;
 
-            fgets(buffer, sizeof(buffer), archivo);
-            sscanf(buffer, "%d", &eTemp.circuito);
+            case 3: // EVOCACION
+                // La evocación SOLO trae el DNI en el archivo
+                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%ld", &eTemp.dni);
 
-            if (operacion == 1) {
-                AltaLSO(&miLista, eTemp, &exito, &costoCorrimientosLSO);
-            } else {
-                BajaLSO(&miLista, eTemp, &exito, &costoCorrimientosLSO);
-            }
-            ActualizarMarca(eTemp.dni, eTemp, operacion, exito);
+                int pos;
+                // La evocación mide celdas consultadas
+                LocalizarLSO(&miLista, &pos, eTemp.dni, &exito, &costoOp);
 
-        } else if (operacion == 3) {
-            fgets(buffer, sizeof(buffer), archivo);
-            sscanf(buffer, "%ld", &eTemp.dni);
+                if (exito == 1) {
+                    RegistrarCosto(&statsLSO.evocar_exito, costoOp);
+                } else {
+                    RegistrarCosto(&statsLSO.evocar_fracaso, costoOp);
+                }
+                break;
 
-            // Invocamos a EvocarLSO formalmente
-            EvocarLSO(&miLista, eTemp.dni, &eEvocado, &exito, &costoConsultasLSO);
+            default:
+                break;
         }
     }
 
     fclose(archivo);
 
-    //Prueba del localizar
-    elector e1 = {80000000, "Pedro Luna", "Calle E 202", 5700, 10, 1040};
-    LocalizarLSO(&miLista, &pos, e1.dni, &exito, &costoConsultasLSO);
+    // 3. MOSTRAR LA TABLA DE COSTOS (Exactamente como en tu imagen)
+    printf("\n---------------------------|--------------|");
+    printf("\n                           |     LSOBB    |");
+    printf("\n---------------------------|--------------|");
 
-    // Muestra de costos obtenidos tras la lectura del archivo
-    printf("\n=== RESULTADOS DE LA LISTA SECUENCIAL ORDENADA (LSO) ===\n");
-    printf("Cantidad final de electores: %d\n", miLista.cantidad);
-    printf("Costo total de Consultas del archivo (Celdas): %.2f\n", costoConsultasLSO);
-    printf("Costo total de Modificaciones (Corrimientos): %.2f\n", costoCorrimientosLSO);
-    printf("========================================================\n");
+    // Altas
+    printf("\nAlta                       |");
+    printf("\n  Cantidad                 | %10d   |", statsLSO.alta.cantidad);
+    printf("\n  Costo Acumulado          | %12.2f |", statsLSO.alta.costo_acu);
+    printf("\n  Costo Maximo             | %12.2f |", statsLSO.alta.costo_max);
+    printf("\n  Costo Promedio           | %12.2f |", statsLSO.alta.cantidad > 0 ? statsLSO.alta.costo_acu / statsLSO.alta.cantidad : 0);
+    printf("\n---------------------------|--------------|");
 
-    // Ejecución de la evaluación formal a posteriori mediante el vector de marcas
-    EvaluarCostosEvocacionLSO(&miLista, bancoElectores, marcas, totalHistorico);
+    // Bajas
+    printf("\nBaja                       |");
+    printf("\n  Cantidad                 | %10d   |", statsLSO.baja.cantidad);
+    printf("\n  Costo Acumulado          | %12.2f |", statsLSO.baja.costo_acu);
+    printf("\n  Costo Maximo             | %12.2f |", statsLSO.baja.costo_max);
+    printf("\n  Costo Promedio           | %12.2f |", statsLSO.baja.cantidad > 0 ? statsLSO.baja.costo_acu / statsLSO.baja.cantidad : 0);
+    printf("\n---------------------------|--------------|");
 
-    // Prueba de la visualización paginada
-    printf("\nPresione ENTER para ver la estructura cargada...");
-    while (getchar() != '\n');
-    MostrarEstructuraLSO(&miLista);
+    // Evocar Exitoso
+    printf("\nEvocar exitoso             |");
+    printf("\n  Cantidad                 | %10d   |", statsLSO.evocar_exito.cantidad);
+    printf("\n  Costo Acumulado          | %12.2f |", statsLSO.evocar_exito.costo_acu);
+    printf("\n  Costo Maximo             | %12.2f |", statsLSO.evocar_exito.costo_max);
+    printf("\n  Costo Promedio           | %12.2f |", statsLSO.evocar_exito.cantidad > 0 ? statsLSO.evocar_exito.costo_acu / statsLSO.evocar_exito.cantidad : 0);
+    printf("\n---------------------------|--------------|");
 
-
-
-    //Fin de prueba LSO
-
-    // Inicializamos el árbol vacío
-    ABB miArbol;
-    miArbol.raiz = NULL;
-    int exito;
-
-    // --- 1. GENERACIÓN DE DATOS DE PRUEBA ---
-    // Usamos DNIs pequeños y redondos para que mentalmente te sea fácil graficar el árbol.
-    elector e50 = {50000000, "Ana Gomez", "Calle A 123", 5700, 10, 1040};
-    elector e30 = {30000000, "Luis Perez", "Calle B 456", 5700, 10, 1040};
-    elector e70 = {70000000, "Maria Sosa", "Calle C 789", 5700, 10, 1040};
-    elector e60 = {60000000, "Juan Diaz", "Calle D 101", 5700, 10, 1040};
-    elector e80 = {80000000, "Pedro Luna", "Calle E 202", 5700, 10, 1040};
-
-    // Elector trampa: Mismo DNI que e70, pero distinto nombre.
-    elector e70_falso = {70000000, "FALSO Sosa", "Calle C 789", 5700, 10, 1040};
-    // Elector inexistente
-    elector e99 = {99000000, "Nadie Ninguno", "Nada", 0, 0, 0};
-
-    printf("=== INICIANDO PRUEBAS DE ABB ===\n\n");
-
-    // --- 2. PRUEBAS DE ALTA ---
-    printf("--- ALTAS ---\n");
-    AltaABB(&miArbol, e50, &exito);
-    printf("Alta Raiz (DNI 50M): %s\n", exito == 1 ? "EXITO" : "FALLO");
-
-    AltaABB(&miArbol, e30, &exito);
-    printf("Alta Hijo Izq (DNI 30M): %s\n", exito == 1 ? "EXITO" : "FALLO");
-
-    AltaABB(&miArbol, e70, &exito);
-    printf("Alta Hijo Der (DNI 70M): %s\n", exito == 1 ? "EXITO" : "FALLO");
-
-    AltaABB(&miArbol, e60, &exito);
-    AltaABB(&miArbol, e80, &exito);
-    printf("Alta Nodos Profundos (60M y 80M): EXITO\n");
-
-    AltaABB(&miArbol, e50, &exito); // Intento de duplicado
-    printf("Alta REPETIDO (DNI 50M): %s (Esperado: FALLO)\n\n", exito == 1 ? "EXITO" : "FALLO");
-
-
-    // --- 3. PRUEBAS DE BAJA ---
-    printf("--- BAJAS ---\n");
-
-    // Baja Fallida: Nupla no coincide
-    BajaABB(&miArbol, e70_falso, &exito);
-    printf("Baja Nupla Incorrecta (DNI 70M): %s (Esperado: FALLO)\n", exito == 1 ? "EXITO" : "FALLO");
-
-    // Baja Fallida: No existe
-    BajaABB(&miArbol, e99, &exito);
-    printf("Baja Inexistente (DNI 99M): %s (Esperado: FALLO)\n", exito == 1 ? "EXITO" : "FALLO");
-
-    // Baja Exitosa: Nodo Hoja (Sin hijos)
-    BajaABB(&miArbol, e80, &exito);
-    printf("Baja Nodo Hoja (DNI 80M): %s (Esperado: EXITO)\n", exito == 1 ? "EXITO" : "FALLO");
-
-    // Baja Exitosa: Nodo con 2 hijos (Prueba la política de reemplazo)
-    // El nodo 50 (Raíz) tiene a 30 por izquierda y a 70 por derecha.
-    BajaABB(&miArbol, e50, &exito);
-    printf("Baja Nodo 2 Hijos / Raiz (DNI 50M): %s (Esperado: EXITO)\n", exito == 1 ? "EXITO" : "FALLO");
+    // Evocar Fracaso
+    printf("\nEvocar fracaso             |");
+    printf("\n  Cantidad                 | %10d   |", statsLSO.evocar_fracaso.cantidad);
+    printf("\n  Costo Acumulado          | %12.2f |", statsLSO.evocar_fracaso.costo_acu);
+    printf("\n  Costo Maximo             | %12.2f |", statsLSO.evocar_fracaso.costo_max);
+    printf("\n  Costo Promedio           | %12.2f |", statsLSO.evocar_fracaso.cantidad > 0 ? statsLSO.evocar_fracaso.costo_acu / statsLSO.evocar_fracaso.cantidad : 0);
+    printf("\n---------------------------|--------------|\n");
 
     return 0;
-
 }
 
 
