@@ -33,6 +33,7 @@ typedef struct {
 |
 |   */
 
+//Por si quiero crear variables Globales
 elector bancoElectores[ELECTORES_ESPERADOS];
 int marcas[ELECTORES_ESPERADOS]; // 1 = Está en la estructura | 0 = No está (o fue dado de baja)
 int totalHistorico = 0;
@@ -378,13 +379,17 @@ elector CopyLVO(LVO l){
 
 
 //----------------------//
-void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito){
+void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito,int *costo){
 
     ResetLVO(lista);
 
-    while( lista->cur->dato.dni < dni){
+
+    while(lista->cur->dato.dni < dni){
+        (*costo)++; //Aumento porque consulto
         FowardsLVO(lista);
     }
+
+    (*costo)++; //Compruebo si el dato es el correcto
 
     *pos = lista->cur;
 
@@ -395,11 +400,13 @@ void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito){
     }
 }
 
-void AltaLVO(LVO *lista,elector nuevoDato, int *exito){
+void AltaLVO(LVO *lista,elector nuevoDato, int *exito,float *costo){
     Nodo *pos;
     int encontrado; //Seria el exito prima de los apuntes
+    float costoLocalizar = 0;
+    *costo = 0.0;
 
-    LocalizarLVO(lista,nuevoDato.dni,&pos,&encontrado);
+    LocalizarLVO(lista,nuevoDato.dni,&pos,&encontrado,&costoLocalizar);
 
     if (encontrado == 1){
         *exito = 0;
@@ -409,12 +416,14 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito){
         if(nuevoNodo != NULL){
             nuevoNodo->dato = nuevoDato;
             nuevoNodo->siguiente = pos;
+            *costo += 0.5;
 
             if (pos == lista->acc){
-                nuevoNodo->siguiente = pos;
                 lista->acc = nuevoNodo;
+                *costo += 0.5;
             }else{
                 lista->aux->siguiente = nuevoNodo;
+                *costo += 0.5;
             }
 
             *exito = 1; //el alta fue exitosa
@@ -432,7 +441,7 @@ void BajaLVO(LVO *lista, elector nuplaBaja,int *exito){
     int encontrado;
 
     LocalizarLVO(lista,nuplaBaja.dni,&pos,&encontrado);
-
+    *costo = 0.0;
     if(encontrado == 1){
         if(CompararNuplas(pos->dato,nuplaBaja) == 1){
             if(pos == lista->acc){
@@ -445,10 +454,11 @@ void BajaLVO(LVO *lista, elector nuplaBaja,int *exito){
             free(lista->cur);
             lista->aux = lista->acc;
             lista->cur = lista->acc;*/
-
+            *costo += 0.5;
             }else{
             //Supress en el medio o primera posición
             lista->aux->siguiente = pos->siguiente;
+            *costo += 0.5;
 
             /*
             lista->cursor = lista->cursor->siguiente;
@@ -470,6 +480,24 @@ void BajaLVO(LVO *lista, elector nuplaBaja,int *exito){
 
 }
 
+/*void EvocarLSO(lso *lista, long dniBuscar, elector *eRecuperado, int *exito, float *costoConsultasLSO) {
+    int pos;
+
+    LocalizarLSO(lista, &pos, dniBuscar, exito, costoConsultasLSO);
+    if (*exito == 1) {
+        *eRecuperado = lista->electores[pos];
+    }
+}*/
+void EvocarLVO(LVO *lista, long dniBuscar, elector *eRecuperado, int *exito,float *costo){
+
+    Nodo *posLVO;
+
+    LocalizarLVO()SO(lista,&posLVO,dniBuscar,exito,costo);
+
+    if(*exito == 1){
+        *eRecuperado = posLVO->dato;
+    }
+}
 /*
   ===================================
 
@@ -634,15 +662,151 @@ Memorización
 ==========
 */
 
-int memorizarDesdeArchivo(){
+int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, Estadisticas *statsLVO, Estadisticas *statsABB){
+    //Inicialización de Datos
+    lso->cantidad = 0;
+    InitLVO(lvo);
+    *abb->raiz= NULL;
+
+    //Definción de variables
+    int exito;
+    elector eTemp; //Como pivote para para las operaciónes de alta y baja
+    int exitoLSO, exitoLVO, exitoABB;
+    float costoLSO, costoLVO, costoABB;
+
+
+    //Variables para la lectura de archivo
+    FILE *archivo = fopen("Operaciones_Padron.txt", "r");
+    char buffer[150]; //La linea que va a ser leida por el puntero file
+
+
+    // Inicialización de Estadísticas LSO
+    InicializarMetricas(&statsLSO->alta);
+    InicializarMetricas(&statsLSO->baja);
+    InicializarMetricas(&statsLSO->evocar_exito);
+    InicializarMetricas(&statsLSO->evocar_fracaso);
+
+    // Inicialización de Estadísticas LVO
+    InicializarMetricas(&statsLVO->alta);
+    InicializarMetricas(&statsLVO->baja);
+    InicializarMetricas(&statsLVO->evocar_exito);
+    InicializarMetricas(&statsLVO->evocar_fracaso);
+
+    // Inicialización de Estadísticas ABB
+    InicializarMetricas(&statsABB->alta);
+    InicializarMetricas(&statsABB->baja);
+    InicializarMetricas(&statsABB->evocar_exito);
+    InicializarMetricas(&statsABB->evocar_fracaso);
+
+    //Apertura de Archivo
+    if (archivo == NULL) {
+        printf("Error: No se pudo abrir el archivo.\n");
+        return 0;
+    }
+
+    //Lectura de Archivo
+    while (fgets(buffer, sizeof(buffer), archivo) != NULL) {
+        //Se lee el codigo de operación
+        int codigoOp = atoi(buffer);
+
+        //LVO: se comprueba que se pueda crear un nuevo nodo.
+        Nodo *aux =(Nodo *)malloc(sizeof(Nodo));
+        if(aux == NULL){
+            printf("ERROR: no hay memoria suficiente");
+            break;
+        }
+
+        if(codigoOp == 1 | codigoOp == 2){ //Es un alta o una baja.
+        //Creo el elector en la variable temporal.
+
+            // Dni
+            fgets(buffer, sizeof(buffer), archivo);
+            eTemp.dni = atoi(buffer);
+
+            //Nombre y Apellido
+            fgets(buffer, sizeof(buffer), archivo);
+            buffer[strcspn(buffer, "\r\n")] = 0; // Limpiamos el salto de línea
+            strcpy(eTemp.nombreApellido, buffer);
+
+            //Domicilio
+            fgets(buffer, sizeof(buffer), archivo);
+            buffer[strcspn(buffer, "\r\n")] = 0;
+            strcpy(eTemp.domicilio, buffer);
+
+            //Código Postal
+            fgets(buffer, sizeof(buffer), archivo);
+            eTemp.codigoPostal = atoi(buffer);
+
+            //Mesa
+            fgets(buffer, sizeof(buffer), archivo);
+            eTemp.numeroMesa = atoi(buffer);
+
+            //Circuito
+            fgets(buffer, sizeof(buffer), archivo);
+            eTemp.circuito = atoi(buffer);
+
+            if(codigoOp == 1){
+
+                //1. ALTA LSO
+                AltaLSO(lista,eTemp)
+
+                //2. ALTA LVO
+                AltaLVO(lvo, eTemp, &exitoLVO, &costoLVO);
+                RegistrarCosto(&statsLVO->alta, costoLVO);
+
+
+                //3. ALTA ABB
+                AltaABB();
+
+            }else{
+                //1. ALTA LSO
+                BajaLSO();
+
+                //2. ALTA LVO
+
+                BajaLVO();
+
+
+                //3. ALTA ABB
+                BajaABB();
+
+            }
+
+        }else{ //Es una evocación
+
+            fgets(linea, sizeof(linea), archivo);
+            long dniEvocar = atol(linea);
+
+            //1. EVOCACION LSO
+            AltaLSO(lista,eTemp)
+
+            //2. EVOCACION LVO
+
+            AltaLVO();
+
+
+            //3. EVOCACION ABB
+            AltaABB();
+        }
+
+
+
+
+
+    }
+
 
 
 }
 
 
 int main() {
+    ///Inicializaciónde Estructuras
     lso miLista;
     miLista.cantidad = 0;
+    LVO lvoPadron;
+    ABB abbPadron;
+
 
     // 1. Inicializamos todas nuestras estadísticas para la LSO
     Estadisticas statsLSO;
