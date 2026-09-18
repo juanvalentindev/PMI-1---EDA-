@@ -296,9 +296,19 @@ elector CopyLVO(LVO l){
     return l.cur->dato;
 }
 
+<<<<<<< HEAD
 void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito,float *costo){
     *costo =0;
     ResetLVO(lista);
+=======
+
+//----------------------//
+void LocalizarLVO(LVO *lista , long dni , Nodo** pos , int *exito,float *costo){
+
+    ResetLVO(lista);
+    *costo = 0;
+
+>>>>>>> 9a8685f (a)
     while(lista->cur->dato.dni < dni){
         (*costo)++; //Aumento porque consulto
         FowardsLVO(lista);
@@ -676,11 +686,9 @@ int memorizarDesdeArchivo(lso *miLista, LVO *lvo, ABB *abb, Estadisticas *statsL
     return 1;
 }
 
-<<<<<<< HEAD
 /* ==========================================================================
    MAIN (FUSIONADO Y FORMATEADO)
-   ========================================================================== */
-=======
+
 
 /* AGREGAR AL MAIN DESPUES
 / Estructuras de control
@@ -696,7 +704,6 @@ memorizarDesdeArchivo(&miLista, &lvoPadron, &abbPadron, &statsLSO, &statsLVO, &s
 */
 
 
->>>>>>> 936cb48 (a)
 int main() {
     // Inicialización de Estructuras (LSO, LVO, ABB)
     lso miLista;
