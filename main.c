@@ -296,19 +296,13 @@ elector CopyLVO(LVO l){
     return l.cur->dato;
 }
 
-<<<<<<< HEAD
-void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito,float *costo){
-    *costo =0;
-    ResetLVO(lista);
-=======
-
 //----------------------//
 void LocalizarLVO(LVO *lista , long dni , Nodo** pos , int *exito,float *costo){
 
     ResetLVO(lista);
     *costo = 0;
 
->>>>>>> 9a8685f (a)
+
     while(lista->cur->dato.dni < dni){
         (*costo)++; //Aumento porque consulto
         FowardsLVO(lista);
@@ -329,7 +323,6 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito,float *costo){
     int encontrado; //Seria el exito prima de los apuntes
     float costoLocalizar = 0;
     *costo = 0.0;
-
     LocalizarLVO(lista,nuevoDato.dni,&pos,&encontrado,&costoLocalizar);
 
     if (encontrado == 1){
@@ -339,7 +332,10 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito,float *costo){
         Nodo *nuevoNodo = (Nodo *)malloc(sizeof(Nodo));
         if(nuevoNodo != NULL){
             nuevoNodo->dato = nuevoDato;
+
             nuevoNodo->siguiente = pos;
+            *costo += 0.5;
+
 
             if (pos == lista->acc){
                 lista->acc = nuevoNodo;
@@ -360,10 +356,12 @@ void BajaLVO(LVO *lista, elector nuplaBaja,int *exito,float *costo){
     Nodo *pos;
     int encontrado;
     float costoLocalizar;
+    *costo = 0.0;
 
     LocalizarLVO(lista,nuplaBaja.dni,&pos,&encontrado,&costoLocalizar);
-    *costo = 0.0;
+
     if(encontrado == 1){
+
         if(CompararNuplas(pos->dato,nuplaBaja) == 1){
             if(pos == lista->acc){
                 lista->acc = pos->siguiente;
@@ -372,6 +370,7 @@ void BajaLVO(LVO *lista, elector nuplaBaja,int *exito,float *costo){
                 lista->aux->siguiente = pos->siguiente;
                 *costo += 0.5;
             }
+
             free(pos);
             *exito = 1;
         } else {
@@ -543,9 +542,38 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito,float *costo){
     }
 }
 
+/*void EvocarLVO(LVO *lista, long dniBuscar, elector *eRecuperado, int *exito,float *costo){
+    Nodo *posLVO;
+    LocalizarLVO(lista,dniBuscar,&posLVO,exito,costo);
+    if(*exito == 1){
+        *eRecuperado = posLVO->dato;
+    }
+}
+*/
+
+void EvocarABB(ABB *arbol, int dniBuscado, elector *electorRetornado, int *exito, float *costo){
+    NodoArbol *pos = NULL;
+    //Llamamos al localizar
+    LocalizarABB(arbol,dniBuscado,&pos,exito,NULL, costo);
+    if(*exito == 1){
+        *electorRetornado = pos->valor;
+    }
+
+
+}
+
+
+
+
+
+void MostrarEstructuraABB(ABB){
+
+
+}
 /* ==========================================================================
    MEMORIZACIÓN DESDE ARCHIVO
    ========================================================================== */
+
 int memorizarDesdeArchivo(lso *miLista, LVO *lvo, ABB *abb, Estadisticas *statsLSO, Estadisticas *statsLVO, Estadisticas *statsABB){
     //Inicialización de Datos
     miLista->cantidad = 0;
@@ -673,7 +701,7 @@ int memorizarDesdeArchivo(lso *miLista, LVO *lvo, ABB *abb, Estadisticas *statsL
 
             //3. EVOCACION ABB
             NodoArbol *posABB, *padreABB;
-            LocalizarABB(abb, dniEvocar, &posABB, &exitoABB, &padreABB, &costoABB);
+            EvocarABB(abb, dniEvocar, &eTemp, &exitoABB, &costoABB);
             if (exitoABB == 1) {
                 RegistrarCosto(&statsABB->evocar_exito, costoABB);
             } else {
@@ -688,23 +716,11 @@ int memorizarDesdeArchivo(lso *miLista, LVO *lvo, ABB *abb, Estadisticas *statsL
 
 /* ==========================================================================
    MAIN (FUSIONADO Y FORMATEADO)
-
-
-/* AGREGAR AL MAIN DESPUES
-/ Estructuras de control
-lso miLista;
-LVO lvoPadron;
-ABB abbPadron;
-
-// Métricas
-Estadisticas statsLSO, statsLVO, statsABB;
-
-// la función de memorizar desde archivo
-memorizarDesdeArchivo(&miLista, &lvoPadron, &abbPadron, &statsLSO, &statsLVO, &statsABB);
+   ==========================================================================
 */
 
-
 int main() {
+
     // Inicialización de Estructuras (LSO, LVO, ABB)
     lso miLista;
     LVO lvoPadron;
@@ -716,8 +732,7 @@ int main() {
     printf("Iniciando procesamiento del archivo de operaciones...\n");
 
     // Llamamos a la función que lee el archivo y llena las estructuras y métricas
-    int cargaExitosa = memorizarDesdeArchivo(&miLista, &lvoPadron, &abbPadron,
-                                             &statsLSO, &statsLVO, &statsABB);
+    int cargaExitosa = memorizarDesdeArchivo(&miLista, &lvoPadron,&abbPadron,&statsLSO, &statsLVO, &statsABB);
 
     if (cargaExitosa == 0) {
         printf("Se aborto la ejecucion debido a un error en el archivo.\n");
