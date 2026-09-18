@@ -748,7 +748,8 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
             if(codigoOp == 1){
 
                 //1. ALTA LSO
-                AltaLSO(lista,eTemp)
+                AltaLSO(lista, eTemp, &exitoLSO, &costoLSO);
+                RegistrarCosto(&statsLSO->alta, costoLSO);
 
                 //2. ALTA LVO
                 AltaLVO(lvo, eTemp, &exitoLVO, &costoLVO);
@@ -756,47 +757,67 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
 
 
                 //3. ALTA ABB
-                AltaABB();
+                AltaABB(abb, eTemp, &exitoABB, &costoABB);
+                RegistrarCosto(&statsABB->alta, costoABB);
 
             }else{
                 //1. ALTA LSO
-                BajaLSO();
+                BajaLSO(lista, eTemp, &exitoLSO, &costoLSO);
+                RegistrarCosto(&statsLSO->baja, costoLSO);
 
                 //2. ALTA LVO
-
-                BajaLVO();
+                BajaLVO(lvo, eTemp, &exitoLVO, &costoLVO);
+                RegistrarCosto(&statsLVO->baja, costoLVO);
 
 
                 //3. ALTA ABB
-                BajaABB();
-
+                BajaABB(abb, eTemp, &exitoABB, &costoABB);
+                RegistrarCosto(&statsABB->baja, costoABB);
             }
 
-        }else{ //Es una evocación
+        }else if(codigoOp == 3){ //Es una evocación
 
+            //Solo chequeamos el dni
             fgets(linea, sizeof(linea), archivo);
             long dniEvocar = atol(linea);
 
+
+            int posLSO; //LSO: Variable para ralmacenar la posición
+            NodoArbol *posABB,*padreABB; //ABB: Nodos a retornar del evocar
+
+
+
             //1. EVOCACION LSO
-            AltaLSO(lista,eTemp)
+            LocalizarLSO(lista, &posLSO, dniEvocar, &exitoLSO, &costoLSO);
+            if (exitoLSO == 1) {
+                RegistrarCosto(&statsLSO->evocar_exito, costoLSO);
+            } else {
+                RegistrarCosto(&statsLSO->evocar_fracaso, costoLSO);
+            }
 
             //2. EVOCACION LVO
-
-            AltaLVO();
+            EvocarLVO(lvo, dniEvocar, &eTemp, &exitoLVO, &costoLVO);
+            if (exitoLVO == 1) {
+                RegistrarCosto(&statsLVO->evocar_exito, costoLVO);
+            } else {
+                RegistrarCosto(&statsLVO->evocar_fracaso, costoLVO);
+            }
 
 
             //3. EVOCACION ABB
-            AltaABB();
+            LocalizarABB(abb, dniEvocar, &posABB, &exitoABB, &padreABB, &costoABB);
+            if (exitoABB == 1) {
+                RegistrarCosto(&statsABB->evocar_exito, costoABB);
+            } else {
+                RegistrarCosto(&statsABB->evocar_fracaso, costoABB);
+            }
+
         }
-
-
-
-
 
     }
 
-
-
+    fclose(archivo);
+    return 1;
 }
 
 
