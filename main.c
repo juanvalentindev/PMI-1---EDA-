@@ -1,4 +1,3 @@
-
 // Librerias
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,26 +9,15 @@
 #define ELECTORES_ESPERADOS 2000
 #define MAS_INFINITO 999999999
 
-//=== PARA BUSCAR ESTRUCTURAS
-//1. LSO
-//2. LVO
-//3. ABB
-
 //Definicion de struc's Patron
 typedef struct {
-   long dni;                 // El D.N.I. es un entero (usamos long por el tamaño del número)
-   char nombreApellido[50];  // Secuencia de hasta 50 caracteres
-   char domicilio[80];       // Secuencia de hasta 80 caracteres
-   int codigoPostal;         // Es un entero
-   int numeroMesa;           // Es un entero
-   int circuito;             // Es un entero
+    long dni;                 // El D.N.I. es un entero (usamos long por el tamaño del número)
+    char nombreApellido[50];  // Secuencia de hasta 50 caracteres
+    char domicilio[80];       // Secuencia de hasta 80 caracteres
+    int codigoPostal;         // Es un entero
+    int numeroMesa;           // Es un entero
+    int circuito;             // Es un entero
 } elector;
-
-/*
-|
-| OTROS
-|
-|   */
 
 // --- VARIABLES GLOBALES PARA MEDIR COSTOS ---
 float metrica_celdas_LSO = 0;
@@ -115,15 +103,9 @@ void ActualizarMarca(long dni, elector e, int operacion, int exito) {
     }
 }
 
-
-
-/*
- =====================================
-
-1. Lista Secuencialmente Ordenada (LSO)
-
-================================
-*/
+/* ==========================================================================
+   1. Lista Secuencialmente Ordenada (LSO)
+   ========================================================================== */
 
 typedef struct{
   elector electores[ELECTORES_ESPERADOS];
@@ -131,7 +113,6 @@ typedef struct{
 } lso;
 
 void LocalizarLSO(lso *lista, int *pos, long dni, int *exito) {
-    // Protección si la lista está vacía
     if (lista->cantidad == 0) {
         *exito = 0;
         *pos = 0;
@@ -142,7 +123,6 @@ void LocalizarLSO(lso *lista, int *pos, long dni, int *exito) {
     int ls = lista->cantidad - 1;
     int t;
 
-    // Arreglo local para no contabilizar dos veces la misma celda
     int consultada[ELECTORES_ESPERADOS] = {0};
 
     while (li < ls) {
@@ -154,39 +134,33 @@ void LocalizarLSO(lso *lista, int *pos, long dni, int *exito) {
         }
 
         if (dni > lista->electores[t].dni) {
-            li = t + 1;     // Descartamos la mitad izquierda
+            li = t + 1;
         } else {
-            ls = t;         // Retenemos el testigo en el subrango izquierdo
+            ls = t;
         }
     }
 
-    // Al salir del while, li == ls (queda exactamente 1 celda candidata)
     if (!consultada[li]) {
         metrica_celdas_LSO++;
         consultada[li] = 1;
     }
 
-    // Única comprobación de igualdad al final
     if (lista->electores[li].dni == dni) {
         *exito = 1;
         *pos = li;
     } else {
         *exito = 0;
-        // Si no se encontró, determinamos la posición exacta de inserción
         if (dni > lista->electores[li].dni) {
-            *pos = li + 1; // Debe insertarse al final
+            *pos = li + 1;
         } else {
-            *pos = li;     // Debe insertarse desplazando este elemento
+            *pos = li;
         }
     }
 }
 
 void EvocarLSO(lso *lista, long dniBuscar, elector *eRecuperado, int *exito) {
     int pos;
-    // 1. Usa la búsqueda interna
     LocalizarLSO(lista, &pos, dniBuscar, exito);
-
-    // 2. Si hubo éxito, extrae y entrega la información asociada Y
     if (*exito == 1) {
         *eRecuperado = lista->electores[pos];
     }
@@ -231,9 +205,6 @@ void AltaLSO(lso *lista, elector nuevoElector, int *exito){
     }
 }
 
-/* ==========================================================================
-   EVALUACIÓN DEL "LOCALIZAR" USANDO EL VECTOR DE MARCAS
-   ========================================================================== */
 void EvaluarCostosLocalizar(lso *listaLSO) {
     float costoTotalExito = 0, costoMaximoExito = 0;
     int cantExitos = 0;
@@ -244,21 +215,14 @@ void EvaluarCostosLocalizar(lso *listaLSO) {
     for (int i = 0; i < totalHistorico; i++) {
         int pos;
         int exito;
-
-        // 1. Reiniciamos el contador global a cero para esta consulta aislada
         metrica_celdas_LSO = 0;
-
-        // 2. Ejecutamos la búsqueda (que internamente sumará puntos a la métrica)
         LocalizarLSO(listaLSO, &pos, bancoElectores[i].dni, &exito);
 
-        // 3. Utilizamos SOLO el vector de marcas para clasificar este costo
         if (marcas[i] == 1) {
-            // Pertenece a la estructura (Éxito Puro)
             costoTotalExito += metrica_celdas_LSO;
             if (metrica_celdas_LSO > costoMaximoExito) costoMaximoExito = metrica_celdas_LSO;
             cantExitos++;
         } else {
-            // Fue dado de baja (Fracaso Puro)
             costoTotalFracaso += metrica_celdas_LSO;
             if (metrica_celdas_LSO > costoMaximoFracaso) costoMaximoFracaso = metrica_celdas_LSO;
             cantFracasos++;
@@ -279,19 +243,14 @@ void EvaluarCostosLocalizar(lso *listaLSO) {
     printf("=================================================================\n");
 }
 
-/*
-  ===================================
-
-  2. LISTA VINCULADA ORDENADA
-
-  ===================================
-*/
+/* ==========================================================================
+   2. LISTA VINCULADA ORDENADA
+   ========================================================================== */
 
 typedef struct Nodo{
     elector dato;
     struct Nodo* siguiente;
 }Nodo;
-
 
 typedef struct {
     Nodo *acc;
@@ -299,17 +258,10 @@ typedef struct {
     Nodo *aux;
 }LVO;
 
-/*
-°Operaciones de la lista
-|   Vinculada ordenada
-*/
-
 void InitLVO(LVO *l){
     Nodo *masInfinito= (Nodo*)malloc(sizeof(Nodo));
-
     masInfinito->dato.dni = MAS_INFINITO;
     masInfinito->siguiente = NULL;
-
     l->acc = masInfinito;
     l->cur = masInfinito;
     l->aux = masInfinito;
@@ -341,21 +293,16 @@ void FowardsLVO(LVO *l){
 }
 
 elector CopyLVO(LVO l){
-    return l.cur -> dato;
+    return l.cur->dato;
 }
 
-
-//----------------------//
 void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito,float *costo){
-
+    *costo =0;
     ResetLVO(lista);
-
-
     while(lista->cur->dato.dni < dni){
         (*costo)++; //Aumento porque consulto
         FowardsLVO(lista);
     }
-
     (*costo)++; //Compruebo si el dato es el correcto
 
     *pos = lista->cur;
@@ -383,7 +330,6 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito,float *costo){
         if(nuevoNodo != NULL){
             nuevoNodo->dato = nuevoDato;
             nuevoNodo->siguiente = pos;
-            //*costo += 0.5;
 
             if (pos == lista->acc){
                 lista->acc = nuevoNodo;
@@ -392,14 +338,11 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito,float *costo){
                 lista->aux->siguiente = nuevoNodo;
                 *costo += 0.5;
             }
-
-            *exito = 1; //el alta fue exitosa
-
+            *exito = 1;
         }else{
             *exito = 0;
             return;
         }
-
     }
 }
 
@@ -413,66 +356,34 @@ void BajaLVO(LVO *lista, elector nuplaBaja,int *exito,float *costo){
     if(encontrado == 1){
         if(CompararNuplas(pos->dato,nuplaBaja) == 1){
             if(pos == lista->acc){
-            //Supress en la primera posición
-            lista->acc = pos->siguiente;
-
-            /*
-            Supuestamente esto esta mal ?¿
-            lista->acc=lista->cur->siguiente;
-            free(lista->cur);
-            lista->aux = lista->acc;
-            lista->cur = lista->acc;*/
-            *costo += 0.5;
+                lista->acc = pos->siguiente;
+                *costo += 0.5;
             }else{
-            //Supress en el medio o primera posición
-            lista->aux->siguiente = pos->siguiente;
-            *costo += 0.5;
-
-            /*
-            lista->cursor = lista->cursor->siguiente;
-            free(lista->aux->siguiente);
-            lista->aux->siguiente = lista->cur;*/
-
+                lista->aux->siguiente = pos->siguiente;
+                *costo += 0.5;
             }
             free(pos);
             *exito = 1;
+        } else {
+            *exito = 0; //El dni coincidia pero la nupla no
         }
-        *exito = 0; //El dni coincidia pero la nupla no,
-
-
-
     }else{
         *exito = 0;
         return;
     }
-
 }
 
-/*void EvocarLSO(lso *lista, long dniBuscar, elector *eRecuperado, int *exito, float *costoConsultasLSO) {
-    int pos;
-
-    LocalizarLSO(lista, &pos, dniBuscar, exito, costoConsultasLSO);
-    if (*exito == 1) {
-        *eRecuperado = lista->electores[pos];
-    }
-}*/
 void EvocarLVO(LVO *lista, long dniBuscar, elector *eRecuperado, int *exito,float *costo){
-
     Nodo *posLVO;
-
     LocalizarLVO(lista,dniBuscar,&posLVO,exito,costo);
-
     if(*exito == 1){
         *eRecuperado = posLVO->dato;
     }
 }
-/*
-  ===================================
 
-  3. ARBOL BINARIO ORDENADO
-
-  ===================================
-*/
+/* ==========================================================================
+   3. ARBOL BINARIO ORDENADO
+   ========================================================================== */
 
 typedef struct NodoArbol {
     elector valor;
@@ -480,13 +391,11 @@ typedef struct NodoArbol {
     struct NodoArbol *hd; // Puntero al hijo derecho
 } NodoArbol;
 
-
 typedef struct {
     NodoArbol *raiz; // Puntero de inicio del árbol
 } ABB;
 
 void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padreRetornar,float *costo){
-
     NodoArbol *p = arbol->raiz;
     NodoArbol *padre = NULL;
     *costo = 0.0;
@@ -494,8 +403,6 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
     while(p != NULL && p->valor.dni != x){
         (*costo)++;
         padre = p;
-
-
         if(p->valor.dni < x){
             p = p->hd;
         }else{
@@ -504,7 +411,6 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
     }
 
     if(p != NULL){
-        //(*costo)++; //Esta seria la ultima comparación del arbol
         *exito = 1;
         *pos = p;
     }else{
@@ -516,7 +422,6 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
         *padreRetornar = padre; //Retorno el padre para poder utilizarlo en la baja
     }
 }
-
 
 void AltaABB(ABB *arbol, elector nuevoElector , int *exito,float *costo){
     NodoArbol *pos;
@@ -549,7 +454,6 @@ void AltaABB(ABB *arbol, elector nuevoElector , int *exito,float *costo){
                     *costo += 0.5;
                 }
             }
-
             *exito = 1;
         }else{
             *exito = 0;
@@ -568,7 +472,7 @@ NodoArbol *hijoNoNULLPos(NodoArbol *nodo){
 
 void BajaABB(ABB *arbol,elector electorBaja,int *exito,float *costo){
     NodoArbol *pos;
-    NodoArbol *aux; //este es para el caso heavy metal (buscar el mayor de los menores)
+    NodoArbol *aux;
     NodoArbol *padreAux;
     NodoArbol *padre;
     int encontrado;
@@ -576,27 +480,21 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito,float *costo){
     float costoArbol;
     LocalizarABB(arbol,electorBaja.dni,&pos,&encontrado,&padre,&costoArbol);
 
-    if(encontrado == 1){ //Existe una nupla con ese x
-
-        if(CompararNuplas(pos->valor,electorBaja)){ //Comprobamos que sea la nupla
-                //Aca seria lo de modificación para la baja
-                //aca empieza el kilombo :(
-            //Caso 1: tengo un nodo padre con dos hijos
+    if(encontrado == 1){
+        if(CompararNuplas(pos->valor,electorBaja)){
             if(pos->hi == NULL && pos->hd == NULL){
-                 if(padre != NULL){ //NO ES LA RAIZ
+                 if(padre != NULL){
                     if((pos->valor.dni) < (padre->valor.dni)){
                         padre->hi=NULL;
                     }else{
                         padre->hd=NULL;
                     }
                 }else{
-                    arbol->raiz = NULL; //es la raiz
+                    arbol->raiz = NULL;
                 }
-
                 free(pos);
-                *costo += 0.5; // 1 sola modificación de puntero al padre
-
-            }else if(pos->hd == NULL || pos->hi == NULL){ //Caso 2: el nodo que queremos eliminar tiene hijos por una de sus ramas
+                *costo += 0.5;
+            }else if(pos->hd == NULL || pos->hi == NULL){
                  if (padre != NULL){
                     if((pos->valor.dni) < (padre->valor.dni)){
                         padre->hi=hijoNoNULLPos(pos);
@@ -606,71 +504,53 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito,float *costo){
                  }else{
                     arbol->raiz = hijoNoNULLPos(pos);
                  }
-                 free(pos);                   //Eliminamos izquierda.
-                 *costo += 0.5; // 1 sola modificación de puntero al padre o raíz
-            } else { //Caso con 2 hijos, el mas heavy metal chabon
-                 padreAux = pos;
-                aux = pos->hd; //Doy un paso a al derecha
-
-                while(aux->hi != NULL){ // y bajo todo a la izquierda
+                 free(pos);
+                 *costo += 0.5;
+            } else {
+                padreAux = pos;
+                aux = pos->hd;
+                while(aux->hi != NULL){
                     padreAux = aux;
                     aux = aux->hi;
                 }
-
                 pos->valor = aux->valor;
-
                 if (padreAux == pos){
-                    //Aux no tenia hijos a izquierda
                     padreAux->hd = aux->hd;
                 }else{
-                    //Aux era un hijo izquierdo profundo por lo cual , su padre adopta a posible hijo derecho
                     padreAux->hi = aux->hd;
                 }
-
                 free(aux);
-                *costo = 1.5;
-
-
+                *costo += 1.5;
             }
             *exito = 1;
-
-        }else{ //No es la nupla que buscamos
+        }else{
             *exito = 0;
             return;
         }
-
-    }else{ //No existe nupla con ese x
+    }else{
         *exito = 0;
         return;
     }
 }
 
-
-/*
-===========
-
-Memorización
-
-==========
-*/
-
-int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, Estadisticas *statsLVO, Estadisticas *statsABB){
+/* ==========================================================================
+   MEMORIZACIÓN DESDE ARCHIVO
+   ========================================================================== */
+int memorizarDesdeArchivo(lso *miLista, LVO *lvo, ABB *abb, Estadisticas *statsLSO, Estadisticas *statsLVO, Estadisticas *statsABB){
     //Inicialización de Datos
-    lso->cantidad = 0;
+    miLista->cantidad = 0;
     InitLVO(lvo);
-    abb->raiz= NULL;
+    abb->raiz = NULL;
+    totalHistorico = 0;
 
     //Definción de variables
-    int exito;
-    elector eTemp; //Como pivote para para las operaciónes de alta y baja
+    elector eTemp;
     int exitoLSO, exitoLVO, exitoABB;
     float costoLSO, costoLVO, costoABB;
 
-
     //Variables para la lectura de archivo
     FILE *archivo = fopen("Operaciones_Padron.txt", "r");
-    char buffer[150]; //La linea que va a ser leida por el puntero file
-
+    char buffer[150];
 
     // Inicialización de Estadísticas LSO
     InicializarMetricas(&statsLSO->alta);
@@ -698,93 +578,79 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
 
     //Lectura de Archivo
     while (fgets(buffer, sizeof(buffer), archivo) != NULL) {
-        //Se lee el codigo de operación
         int codigoOp = atoi(buffer);
 
-        //LVO: se comprueba que se pueda crear un nuevo nodo.
-        Nodo *aux =(Nodo *)malloc(sizeof(Nodo));
-        if(aux == NULL){
-            printf("ERROR: no hay memoria suficiente");
-            break;
-        }
-
-        if(codigoOp == 1 | codigoOp == 2){ //Es un alta o una baja.
-        //Aca cargamos el elector
+        if(codigoOp == 1 || codigoOp == 2){ // Alta o baja
 
             // Dni
-            fgets(buffer, sizeof(buffer), archivo);
-            eTemp.dni = atoi(buffer);
+            if (fgets(buffer, sizeof(buffer), archivo) == NULL) break;
+            eTemp.dni = atol(buffer);
 
-            //Nombre y Apellido
+            // Nombre
             fgets(buffer, sizeof(buffer), archivo);
-            buffer[strcspn(buffer, "\r\n")] = 0; // Limpiamos el salto de línea
+            buffer[strcspn(buffer, "\r\n")] = 0;
             strcpy(eTemp.nombreApellido, buffer);
 
-            //Domicilio
+            // Domicilio
             fgets(buffer, sizeof(buffer), archivo);
             buffer[strcspn(buffer, "\r\n")] = 0;
             strcpy(eTemp.domicilio, buffer);
 
-            //Código Postal
+            // CP
             fgets(buffer, sizeof(buffer), archivo);
             eTemp.codigoPostal = atoi(buffer);
 
-            //Mesa
+            // Mesa
             fgets(buffer, sizeof(buffer), archivo);
             eTemp.numeroMesa = atoi(buffer);
 
-            //Circuito
+            // Circuito
             fgets(buffer, sizeof(buffer), archivo);
             eTemp.circuito = atoi(buffer);
 
             if(codigoOp == 1){
-
                 //1. ALTA LSO
-                AltaLSO(lso, eTemp, &exitoLSO);
-                RegistrarCosto(&statsLSO->alta, costoLSO);
+                metrica_corrimientos_LSO = 0;
+                AltaLSO(miLista, eTemp, &exitoLSO);
+                if (exitoLSO == 1) RegistrarCosto(&statsLSO->alta, metrica_corrimientos_LSO);
+                ActualizarMarca(eTemp.dni, eTemp, 1, exitoLSO);
 
                 //2. ALTA LVO
                 AltaLVO(lvo, eTemp, &exitoLVO, &costoLVO);
-                RegistrarCosto(&statsLVO->alta, costoLVO);
-
+                if (exitoLVO == 1) RegistrarCosto(&statsLVO->alta, costoLVO);
 
                 //3. ALTA ABB
                 AltaABB(abb, eTemp, &exitoABB, &costoABB);
-                RegistrarCosto(&statsABB->alta, costoABB);
+                if (exitoABB == 1) RegistrarCosto(&statsABB->alta, costoABB);
 
             }else{
                 //1. BAJA LSO
-                BajaLSO(lso, eTemp, &exitoLSO);
-                RegistrarCosto(&statsLSO->baja, costoLSO);
+                metrica_corrimientos_LSO = 0;
+                BajaLSO(miLista, eTemp, &exitoLSO);
+                if (exitoLSO == 1) RegistrarCosto(&statsLSO->baja, metrica_corrimientos_LSO);
+                ActualizarMarca(eTemp.dni, eTemp, 2, exitoLSO);
 
                 //2. BAJA LVO
                 BajaLVO(lvo, eTemp, &exitoLVO, &costoLVO);
-                RegistrarCosto(&statsLVO->baja, costoLVO);
-
+                if (exitoLVO == 1) RegistrarCosto(&statsLVO->baja, costoLVO);
 
                 //3. BAJA ABB
                 BajaABB(abb, eTemp, &exitoABB, &costoABB);
-                RegistrarCosto(&statsABB->baja, costoABB);
+                if (exitoABB == 1) RegistrarCosto(&statsABB->baja, costoABB);
             }
 
-        }else if(codigoOp == 3){ //Es una evocación
+        } else if(codigoOp == 3){ // Evocación
 
-            //Solo chequeamos el dni
-            fgets(buffer, sizeof(buffer), archivo);
+            if (fgets(buffer, sizeof(buffer), archivo) == NULL) break;
             long dniEvocar = atol(buffer);
 
-
-            int posLSO; //LSO: Variable para ralmacenar la posición
-            NodoArbol *posABB,*padreABB; //ABB: Nodos a retornar del evocar
-
-
-
             //1. EVOCACION LSO
-            LocalizarLSO(lso, &posLSO, dniEvocar, &exitoLSO);
+            metrica_celdas_LSO = 0;
+            EvocarLSO(miLista, dniEvocar, &eTemp, &exitoLSO);
             if (exitoLSO == 1) {
-                RegistrarCosto(&statsLSO->evocar_exito, costoLSO);
+                RegistrarCosto(&statsLSO->evocar_exito, metrica_celdas_LSO);
             } else {
-                RegistrarCosto(&statsLSO->evocar_fracaso, costoLSO);
+                RegistrarCosto(&statsLSO->evocar_fracaso, metrica_celdas_LSO);
             }
 
             //2. EVOCACION LVO
@@ -795,156 +661,96 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
                 RegistrarCosto(&statsLVO->evocar_fracaso, costoLVO);
             }
 
-
             //3. EVOCACION ABB
+            NodoArbol *posABB, *padreABB;
             LocalizarABB(abb, dniEvocar, &posABB, &exitoABB, &padreABB, &costoABB);
             if (exitoABB == 1) {
                 RegistrarCosto(&statsABB->evocar_exito, costoABB);
             } else {
                 RegistrarCosto(&statsABB->evocar_fracaso, costoABB);
             }
-
         }
-
     }
 
     fclose(archivo);
     return 1;
 }
 
-/* AGREGAR AL MAIN DESPUES
-/ Estructuras de control
-lso miLista;
-LVO lvoPadron;
-ABB abbPadron;
-
-// Métricas
-Estadisticas statsLSO, statsLVO, statsABB;
-
-// la función de memorizar desde archivo
-memorizarDesdeArchivo(&miLista, &lvoPadron, &abbPadron, &statsLSO, &statsLVO, &statsABB);
-
-
-*/
-
+/* ==========================================================================
+   MAIN (FUSIONADO Y FORMATEADO)
+   ========================================================================== */
 int main() {
+    // Inicialización de Estructuras (LSO, LVO, ABB)
     lso miLista;
-    miLista.cantidad = 0;
+    LVO lvoPadron;
+    ABB abbPadron;
 
-    Estadisticas statsLSO;
-    InicializarMetricas(&statsLSO.alta);
-    InicializarMetricas(&statsLSO.baja);
-    InicializarMetricas(&statsLSO.evocar_exito);
-    InicializarMetricas(&statsLSO.evocar_fracaso);
+    // Declaración de las Estructuras de Estadísticas
+    Estadisticas statsLSO, statsLVO, statsABB;
 
-    FILE *archivo = fopen("Operaciones_Padron.txt", "r");
-    if (archivo == NULL) {
-        printf("Error: No se pudo abrir el archivo.\n");
-        return 1;
+    printf("Iniciando procesamiento del archivo de operaciones...\n");
+
+    // Llamamos a la función que lee el archivo y llena las estructuras y métricas
+    int cargaExitosa = memorizarDesdeArchivo(&miLista, &lvoPadron, &abbPadron,
+                                             &statsLSO, &statsLVO, &statsABB);
+
+    if (cargaExitosa == 0) {
+        printf("Se aborto la ejecucion debido a un error en el archivo.\n");
+        return 1; // Terminamos con error
     }
 
-    printf("Procesando archivo...\n");
-    char buffer[150];
-    int operacion, exito;
-    elector eTemp;
+    printf("Procesamiento exitoso.\n");
 
-    while (fgets(buffer, sizeof(buffer), archivo) != NULL) {
-        if (sscanf(buffer, "%d", &operacion) != 1) continue;
+    printf("\n-----------------------------|--------------|--------------|--------------|\n");
+    printf("                             |   LVO +inf   |     LSOBB    |      ABB     |\n");
+    printf("-----------------------------|--------------|--------------|--------------|\n");
 
-        switch(operacion) {
-            case 1: // ALTA
-                if (fgets(buffer, sizeof(buffer), archivo) == NULL) break;
-                sscanf(buffer, "%ld", &eTemp.dni);
-                fgets(buffer, sizeof(buffer), archivo); buffer[strcspn(buffer, "\r\n")] = 0; strcpy(eTemp.nombreApellido, buffer);
-                fgets(buffer, sizeof(buffer), archivo); buffer[strcspn(buffer, "\r\n")] = 0; strcpy(eTemp.domicilio, buffer);
-                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.codigoPostal);
-                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.numeroMesa);
-                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.circuito);
+    // --- ALTA ---
+    printf("Alta                         |              |              |              |\n");
+    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.alta.cantidad, statsLSO.alta.cantidad, statsABB.alta.cantidad);
+    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.alta.costo_acu, statsLSO.alta.costo_acu, statsABB.alta.costo_acu);
+    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.alta.costo_max, statsLSO.alta.costo_max, statsABB.alta.costo_max);
+    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+        statsLVO.alta.cantidad > 0 ? statsLVO.alta.costo_acu / statsLVO.alta.cantidad : 0,
+        statsLSO.alta.cantidad > 0 ? statsLSO.alta.costo_acu / statsLSO.alta.cantidad : 0,
+        statsABB.alta.cantidad > 0 ? statsABB.alta.costo_acu / statsABB.alta.cantidad : 0);
+    printf("-----------------------------|--------------|--------------|--------------|\n");
 
-                metrica_corrimientos_LSO = 0;
-                AltaLSO(&miLista, eTemp, &exito);
+    // --- BAJA ---
+    printf("Baja                         |              |              |              |\n");
+    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.baja.cantidad, statsLSO.baja.cantidad, statsABB.baja.cantidad);
+    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.baja.costo_acu, statsLSO.baja.costo_acu, statsABB.baja.costo_acu);
+    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.baja.costo_max, statsLSO.baja.costo_max, statsABB.baja.costo_max);
+    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+        statsLVO.baja.cantidad > 0 ? statsLVO.baja.costo_acu / statsLVO.baja.cantidad : 0,
+        statsLSO.baja.cantidad > 0 ? statsLSO.baja.costo_acu / statsLSO.baja.cantidad : 0,
+        statsABB.baja.cantidad > 0 ? statsABB.baja.costo_acu / statsABB.baja.cantidad : 0);
+    printf("-----------------------------|--------------|--------------|--------------|\n");
 
-                // CANDADO: Solo registrar costo si realmente se insertó
-                if (exito == 1) {
-                    RegistrarCosto(&statsLSO.alta, metrica_corrimientos_LSO);
-                }
-                ActualizarMarca(eTemp.dni, eTemp, 1, exito);
-                break;
+    // --- EVOCAR EXITOSO ---
+    printf("Evocar exitoso               |              |              |              |\n");
+    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.evocar_exito.cantidad, statsLSO.evocar_exito.cantidad, statsABB.evocar_exito.cantidad);
+    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_exito.costo_acu, statsLSO.evocar_exito.costo_acu, statsABB.evocar_exito.costo_acu);
+    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_exito.costo_max, statsLSO.evocar_exito.costo_max, statsABB.evocar_exito.costo_max);
+    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+        statsLVO.evocar_exito.cantidad > 0 ? statsLVO.evocar_exito.costo_acu / statsLVO.evocar_exito.cantidad : 0,
+        statsLSO.evocar_exito.cantidad > 0 ? statsLSO.evocar_exito.costo_acu / statsLSO.evocar_exito.cantidad : 0,
+        statsABB.evocar_exito.cantidad > 0 ? statsABB.evocar_exito.costo_acu / statsABB.evocar_exito.cantidad : 0);
+    printf("-----------------------------|--------------|--------------|--------------|\n");
 
-            case 2: // BAJA
-                if (fgets(buffer, sizeof(buffer), archivo) == NULL) break;
-                sscanf(buffer, "%ld", &eTemp.dni);
-                fgets(buffer, sizeof(buffer), archivo); buffer[strcspn(buffer, "\r\n")] = 0; strcpy(eTemp.nombreApellido, buffer);
-                fgets(buffer, sizeof(buffer), archivo); buffer[strcspn(buffer, "\r\n")] = 0; strcpy(eTemp.domicilio, buffer);
-                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.codigoPostal);
-                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.numeroMesa);
-                fgets(buffer, sizeof(buffer), archivo); sscanf(buffer, "%d", &eTemp.circuito);
-
-                metrica_corrimientos_LSO = 0;
-                BajaLSO(&miLista, eTemp, &exito);
-
-                // CANDADO: Solo registrar costo si realmente se eliminó
-                if (exito == 1) {
-                    RegistrarCosto(&statsLSO.baja, metrica_corrimientos_LSO);
-                }
-                ActualizarMarca(eTemp.dni, eTemp, 2, exito);
-                break;
-
-            case 3: // EVOCACION DESDE EL ARCHIVO
-                if (fgets(buffer, sizeof(buffer), archivo) == NULL) break;
-                if (sscanf(buffer, "%ld", &eTemp.dni) != 1) break; // Evita el fantasma del EOF
-
-                int pos;
-                metrica_celdas_LSO = 0;
-                EvocarLSO(&miLista, eTemp.dni, &eTemp, &exito);
-
-                if (exito == 1) {
-                    RegistrarCosto(&statsLSO.evocar_exito, metrica_celdas_LSO);
-                } else {
-                    RegistrarCosto(&statsLSO.evocar_fracaso, metrica_celdas_LSO);
-                }
-                break;
-        }
-    }
-    fclose(archivo);
-
-    // --- TABLA DE RESULTADOS DE LAS OPERACIONES ---
-    printf("\n---------------------------|--------------|");
-    printf("\n                           |     LSOBB    |");
-    printf("\n---------------------------|--------------|");
-
-    printf("\nAlta                       |");
-    printf("\n  Cantidad                 | %10d   |", statsLSO.alta.cantidad);
-    printf("\n  Costo Acumulado          | %12.2f |", statsLSO.alta.costo_acu);
-    printf("\n  Costo Maximo             | %12.2f |", statsLSO.alta.costo_max);
-    printf("\n  Costo Promedio           | %12.2f |", statsLSO.alta.cantidad > 0 ? statsLSO.alta.costo_acu / statsLSO.alta.cantidad : 0);
-    printf("\n---------------------------|--------------|");
-
-    printf("\nBaja                       |");
-    printf("\n  Cantidad                 | %10d   |", statsLSO.baja.cantidad);
-    printf("\n  Costo Acumulado          | %12.2f |", statsLSO.baja.costo_acu);
-    printf("\n  Costo Maximo             | %12.2f |", statsLSO.baja.costo_max);
-    printf("\n  Costo Promedio           | %12.2f |", statsLSO.baja.cantidad > 0 ? statsLSO.baja.costo_acu / statsLSO.baja.cantidad : 0);
-    printf("\n---------------------------|--------------|");
-
-    printf("\nEvocar exitoso             |");
-    printf("\n  Cantidad                 | %10d   |", statsLSO.evocar_exito.cantidad);
-    printf("\n  Costo Acumulado          | %12.2f |", statsLSO.evocar_exito.costo_acu);
-    printf("\n  Costo Maximo             | %12.2f |", statsLSO.evocar_exito.costo_max);
-    printf("\n  Costo Promedio           | %12.2f |", statsLSO.evocar_exito.cantidad > 0 ? statsLSO.evocar_exito.costo_acu / statsLSO.evocar_exito.cantidad : 0);
-    printf("\n---------------------------|--------------|");
-
-    printf("\nEvocar fracaso             |");
-    printf("\n  Cantidad                 | %10d   |", statsLSO.evocar_fracaso.cantidad);
-    printf("\n  Costo Acumulado          | %12.2f |", statsLSO.evocar_fracaso.costo_acu);
-    printf("\n  Costo Maximo             | %12.2f |", statsLSO.evocar_fracaso.costo_max);
-    printf("\n  Costo Promedio           | %12.2f |", statsLSO.evocar_fracaso.cantidad > 0 ? statsLSO.evocar_fracaso.costo_acu / statsLSO.evocar_fracaso.cantidad : 0);
-    printf("\n---------------------------|--------------|\n");
+    // --- EVOCAR FRACASO ---
+    printf("Evocar fracaso               |              |              |              |\n");
+    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.evocar_fracaso.cantidad, statsLSO.evocar_fracaso.cantidad, statsABB.evocar_fracaso.cantidad);
+    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_fracaso.costo_acu, statsLSO.evocar_fracaso.costo_acu, statsABB.evocar_fracaso.costo_acu);
+    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_fracaso.costo_max, statsLSO.evocar_fracaso.costo_max, statsABB.evocar_fracaso.costo_max);
+    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+        statsLVO.evocar_fracaso.cantidad > 0 ? statsLVO.evocar_fracaso.costo_acu / statsLVO.evocar_fracaso.cantidad : 0,
+        statsLSO.evocar_fracaso.cantidad > 0 ? statsLSO.evocar_fracaso.costo_acu / statsLSO.evocar_fracaso.cantidad : 0,
+        statsABB.evocar_fracaso.cantidad > 0 ? statsABB.evocar_fracaso.costo_acu / statsABB.evocar_fracaso.cantidad : 0);
+    printf("-----------------------------|--------------|--------------|--------------|\n");
 
     // --- PRUEBA TEÓRICA DE LA FUNCIÓN "LOCALIZAR" ---
     EvaluarCostosLocalizar(&miLista);
 
     return 0;
 }
-
-
