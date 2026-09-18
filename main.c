@@ -10,7 +10,7 @@
 #define ELECTORES_ESPERADOS 2000
 #define MAS_INFINITO 999999999
 
-static float costoTotalLSO = 0;
+//static float costoTotalLSO = 0;
 
 //=== PARA BUSCAR ESTRUCTURAS
 //1. LSO
@@ -416,7 +416,7 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito,float *costo){
         if(nuevoNodo != NULL){
             nuevoNodo->dato = nuevoDato;
             nuevoNodo->siguiente = pos;
-            *costo += 0.5;
+            //*costo += 0.5;
 
             if (pos == lista->acc){
                 lista->acc = nuevoNodo;
@@ -436,7 +436,7 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito,float *costo){
     }
 }
 
-void BajaLVO(LVO *lista, elector nuplaBaja,int *exito){
+void BajaLVO(LVO *lista, elector nuplaBaja,int *exito,float *costo){
     Nodo *pos;
     int encontrado;
 
@@ -517,13 +517,17 @@ typedef struct {
     NodoArbol *raiz; // Puntero de inicio del árbol
 } ABB;
 
-void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padreRetornar){
+void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padreRetornar,float *costo){
 
     NodoArbol *p = arbol->raiz;
     NodoArbol *padre = NULL;
+    *costo = 0.0;
 
     while(p != NULL && p->valor.dni != x){
+        (*costo)++;
         padre = p;
+
+
         if(p->valor.dni < x){
             p = p->hd;
         }else{
@@ -532,6 +536,7 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
     }
 
     if(p != NULL){
+        (*costo)++; //Esta seria la ultima comparación del arbol
         *exito = 1;
         *pos = p;
     }else{
@@ -545,10 +550,11 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
 }
 
 
-void AltaABB(ABB *arbol, elector nuevoElector , int *exito){
+void AltaABB(ABB *arbol, elector nuevoElector , int *exito,float *costo){
     NodoArbol *pos;
     int encontrado;
     LocalizarABB(arbol,nuevoElector.dni,&pos,&encontrado,NULL);
+    *costo = 0.0;
 
     if(encontrado == 1){
         *exito = 0;
@@ -558,16 +564,23 @@ void AltaABB(ABB *arbol, elector nuevoElector , int *exito){
         if(nuevoNodo != NULL){
             nuevoNodo->valor = nuevoElector;
             nuevoNodo->hi = NULL;
+            *costo += 0.5;
             nuevoNodo->hd = NULL;
+            *costo += 0.5;
+
             if(pos == NULL){
                 arbol->raiz = nuevoNodo;
+                *costo += 0.5;
             }else{
                 if (nuevoElector.dni<pos->valor.dni){
                     pos->hi = nuevoNodo;
+                    *costo += 0.5;
                 }else{
                     pos->hd = nuevoNodo;
+                    *costo += 0.5;
                 }
             }
+
             *exito = 1;
         }else{
             *exito = 0;
@@ -584,21 +597,23 @@ NodoArbol *hijoNoNULLPos(NodoArbol *nodo){
     }
 }
 
-void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
+void BajaABB(ABB *arbol,elector electorBaja,int *exito,float *costo){
     NodoArbol *pos;
     NodoArbol *aux; //este es para el caso heavy metal (buscar el mayor de los menores)
     NodoArbol *padreAux;
     NodoArbol *padre;
     int encontrado;
+    *costo = 0.0;
 
     LocalizarABB(arbol,electorBaja.dni,&pos,&encontrado,&padre);
 
     if(encontrado == 1){ //Existe una nupla con ese x
+
         if(CompararNuplas(pos->valor,electorBaja)){ //Comprobamos que sea la nupla
                 //Aca seria lo de modificación para la baja
                 //aca empieza el kilombo :(
             //Caso 1: tengo un nodo padre con dos hijos
-            if(pos->hi != NULL && pos->hd != NULL){
+            if(pos->hi == NULL && pos->hd == NULL){
                  if(padre != NULL){ //NO ES LA RAIZ
                     if((pos->valor.dni) < (padre->valor.dni)){
                         padre->hi=NULL;
@@ -608,7 +623,9 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                 }else{
                     arbol->raiz = NULL; //es la raiz
                 }
+
                 free(pos);
+                *costo += 0.5; // 1 sola modificación de puntero al padre
 
             }else if(pos->hd == NULL || pos->hi == NULL){ //Caso 2: el nodo que queremos eliminar tiene hijos por una de sus ramas
                  if (padre != NULL){
@@ -621,13 +638,16 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                     arbol->raiz = hijoNoNULLPos(pos);
                  }
                  free(pos);                   //Eliminamos izquierda.
+                 *costo += 0.5; // 1 sola modificación de puntero al padre o raíz
             } else { //Caso con 2 hijos, el mas heavy metal chabon
+                 padreAux = pos;
                 aux = pos->hd; //Doy un paso a al derecha
 
                 while(aux->hi != NULL){ // y bajo todo a la izquierda
                     padreAux = aux;
                     aux = aux->hi;
                 }
+
                 pos->valor = aux->valor;
 
                 if (padreAux == pos){
@@ -639,6 +659,7 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
                 }
 
                 free(aux);
+                *costo = 1.5;
 
 
             }
@@ -658,7 +679,9 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito ){
 
 /*
 ===========
+
 Memorización
+
 ==========
 */
 
@@ -717,7 +740,7 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
         }
 
         if(codigoOp == 1 | codigoOp == 2){ //Es un alta o una baja.
-        //Creo el elector en la variable temporal.
+        //Aca cargamos el elector
 
             // Dni
             fgets(buffer, sizeof(buffer), archivo);
@@ -761,16 +784,16 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
                 RegistrarCosto(&statsABB->alta, costoABB);
 
             }else{
-                //1. ALTA LSO
+                //1. BAJA LSO
                 BajaLSO(lista, eTemp, &exitoLSO, &costoLSO);
                 RegistrarCosto(&statsLSO->baja, costoLSO);
 
-                //2. ALTA LVO
+                //2. BAJA LVO
                 BajaLVO(lvo, eTemp, &exitoLVO, &costoLVO);
                 RegistrarCosto(&statsLVO->baja, costoLVO);
 
 
-                //3. ALTA ABB
+                //3. BAJA ABB
                 BajaABB(abb, eTemp, &exitoABB, &costoABB);
                 RegistrarCosto(&statsABB->baja, costoABB);
             }
@@ -820,6 +843,20 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
     return 1;
 }
 
+/* AGREGAR AL MAIN DESPUES
+/ Estructuras de control
+lso miLista;
+LVO lvoPadron;
+ABB abbPadron;
+
+// Métricas
+Estadisticas statsLSO, statsLVO, statsABB;
+
+// la función de memorizar desde archivo
+memorizarDesdeArchivo(&miLista, &lvoPadron, &abbPadron, &statsLSO, &statsLVO, &statsABB);
+
+
+*/
 
 int main() {
     ///Inicializaciónde Estructuras
