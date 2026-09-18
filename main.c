@@ -676,9 +676,27 @@ int memorizarDesdeArchivo(lso *miLista, LVO *lvo, ABB *abb, Estadisticas *statsL
     return 1;
 }
 
+<<<<<<< HEAD
 /* ==========================================================================
    MAIN (FUSIONADO Y FORMATEADO)
    ========================================================================== */
+=======
+
+/* AGREGAR AL MAIN DESPUES
+/ Estructuras de control
+lso miLista;
+LVO lvoPadron;
+ABB abbPadron;
+
+// Métricas
+Estadisticas statsLSO, statsLVO, statsABB;
+
+// la función de memorizar desde archivo
+memorizarDesdeArchivo(&miLista, &lvoPadron, &abbPadron, &statsLSO, &statsLVO, &statsABB);
+*/
+
+
+>>>>>>> 936cb48 (a)
 int main() {
     // Inicialización de Estructuras (LSO, LVO, ABB)
     lso miLista;
