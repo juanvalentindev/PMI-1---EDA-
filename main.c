@@ -379,7 +379,7 @@ elector CopyLVO(LVO l){
 
 
 //----------------------//
-void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito,int *costo){
+void LocalizarLVO(LVO *lista , int dni , Nodo** pos , int *exito,float *costo){
 
     ResetLVO(lista);
 
@@ -439,8 +439,9 @@ void AltaLVO(LVO *lista,elector nuevoDato, int *exito,float *costo){
 void BajaLVO(LVO *lista, elector nuplaBaja,int *exito,float *costo){
     Nodo *pos;
     int encontrado;
+    float costoLocalizar;
 
-    LocalizarLVO(lista,nuplaBaja.dni,&pos,&encontrado);
+    LocalizarLVO(lista,nuplaBaja.dni,&pos,&encontrado,&costoLocalizar);
     *costo = 0.0;
     if(encontrado == 1){
         if(CompararNuplas(pos->dato,nuplaBaja) == 1){
@@ -492,7 +493,7 @@ void EvocarLVO(LVO *lista, long dniBuscar, elector *eRecuperado, int *exito,floa
 
     Nodo *posLVO;
 
-    LocalizarLVO()SO(lista,&posLVO,dniBuscar,exito,costo);
+    LocalizarLVO(lista,dniBuscar,&posLVO,exito,costo);
 
     if(*exito == 1){
         *eRecuperado = posLVO->dato;
@@ -536,7 +537,7 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
     }
 
     if(p != NULL){
-        (*costo)++; //Esta seria la ultima comparación del arbol
+        //(*costo)++; //Esta seria la ultima comparación del arbol
         *exito = 1;
         *pos = p;
     }else{
@@ -553,7 +554,8 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
 void AltaABB(ABB *arbol, elector nuevoElector , int *exito,float *costo){
     NodoArbol *pos;
     int encontrado;
-    LocalizarABB(arbol,nuevoElector.dni,&pos,&encontrado,NULL);
+    float costoArbol;
+    LocalizarABB(arbol,nuevoElector.dni,&pos,&encontrado,NULL,&costoArbol);
     *costo = 0.0;
 
     if(encontrado == 1){
@@ -604,8 +606,8 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito,float *costo){
     NodoArbol *padre;
     int encontrado;
     *costo = 0.0;
-
-    LocalizarABB(arbol,electorBaja.dni,&pos,&encontrado,&padre);
+    float costoArbol;
+    LocalizarABB(arbol,electorBaja.dni,&pos,&encontrado,&padre,&costoArbol);
 
     if(encontrado == 1){ //Existe una nupla con ese x
 
@@ -689,7 +691,7 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
     //Inicialización de Datos
     lso->cantidad = 0;
     InitLVO(lvo);
-    *abb->raiz= NULL;
+    abb->raiz= NULL;
 
     //Definción de variables
     int exito;
@@ -771,7 +773,7 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
             if(codigoOp == 1){
 
                 //1. ALTA LSO
-                AltaLSO(lista, eTemp, &exitoLSO, &costoLSO);
+                AltaLSO(lso, eTemp, &exitoLSO, &costoLSO);
                 RegistrarCosto(&statsLSO->alta, costoLSO);
 
                 //2. ALTA LVO
@@ -785,7 +787,7 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
 
             }else{
                 //1. BAJA LSO
-                BajaLSO(lista, eTemp, &exitoLSO, &costoLSO);
+                BajaLSO(lso, eTemp, &exitoLSO, &costoLSO);
                 RegistrarCosto(&statsLSO->baja, costoLSO);
 
                 //2. BAJA LVO
@@ -801,8 +803,8 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
         }else if(codigoOp == 3){ //Es una evocación
 
             //Solo chequeamos el dni
-            fgets(linea, sizeof(linea), archivo);
-            long dniEvocar = atol(linea);
+            fgets(buffer, sizeof(buffer), archivo);
+            long dniEvocar = atol(buffer);
 
 
             int posLSO; //LSO: Variable para ralmacenar la posición
@@ -811,7 +813,7 @@ int memorizarDesdeArchivo(lso lso[],LVO *lvo,ABB *abb, Estadisticas *statsLSO, E
 
 
             //1. EVOCACION LSO
-            LocalizarLSO(lista, &posLSO, dniEvocar, &exitoLSO, &costoLSO);
+            LocalizarLSO(lso, &posLSO, dniEvocar, &exitoLSO, &costoLSO);
             if (exitoLSO == 1) {
                 RegistrarCosto(&statsLSO->evocar_exito, costoLSO);
             } else {
