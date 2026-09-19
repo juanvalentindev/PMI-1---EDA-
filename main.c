@@ -558,15 +558,13 @@ void EvocarABB(ABB *arbol, int dniBuscado, elector *electorRetornado, int *exito
     if(*exito == 1){
         *electorRetornado = pos->valor;
     }
-
-
 }
 
 
 
 
 
-void MostrarEstructuraABB(ABB){
+void MostrarEstructuraABB(ABB *arbol){
 
 
 }
@@ -715,13 +713,203 @@ int memorizarDesdeArchivo(lso *miLista, LVO *lvo, ABB *abb, Estadisticas *statsL
 }
 
 /* ==========================================================================
+    FUNCIONES PARA MOSTRAR LAS ESTRUCTURAS PAPÁ
+   ==========================================================================
+*/
+
+void MostrarLSO(lso *lista) {
+    // 1. Verificamos si la estructura está vacía[cite: 3]
+    if (lista->cantidad == 0) {
+        printf("\nLa estructura LSOBB se encuentra vacia.\n");
+        return;
+    }
+
+    // Limpieza de buffer inicial
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+
+    printf("\n====================================================================\n");
+    printf("         PADRON DE ELECTORES (LSOBB) - Total: %d electores\n", lista->cantidad);
+    printf("====================================================================\n");
+
+    // 2. Mostramos todos los elementos[cite: 3]
+    for (int i = 0; i < lista->cantidad; i++) {
+        printf("[%4d] DNI: %-10ld | %-25.25s | %-15.15s | CP: %-4d | Mesa: %-4d | Circ.: %-4d\n",
+               i + 1,
+               lista->electores[i].dni,
+               lista->electores[i].nombreApellido,
+               lista->electores[i].domicilio,
+               lista->electores[i].codigoPostal,
+               lista->electores[i].numeroMesa,
+               lista->electores[i].circuito);
+
+        // 3. Paginamos la muestra cada 20 registros[cite: 3]
+        if ((i + 1) % 20 == 0 && (i + 1) < lista->cantidad) {
+            printf("\n--- Mostrando %d de %d. Presione ENTER para continuar o 'Q' para salir ---", i + 1, lista->cantidad);
+
+            char opcion = getchar();
+
+            // Si el usuario presiona 'Q' o 'q', rompemos el ciclo for
+            if (opcion == 'q' || opcion == 'Q') {
+                // Limpiamos el ENTER que quedó en el buffer tras presionar la Q
+                while ((c = getchar()) != '\n' && c != EOF);
+                printf("\nListado abortado por el usuario.\n");
+                break;
+            }
+            // Si presionó cualquier otra tecla antes del ENTER (por error), limpiamos el buffer
+            else if (opcion != '\n') {
+                while ((c = getchar()) != '\n' && c != EOF);
+            }
+        }
+    }
+    printf("====================================================================\n");
+    printf("Fin del listado.\n");
+}
+
+
+void MostrarLVO(LVO *lista) {
+    // Verificamos si la estructura está vacía
+    if (lista->acc->dato.dni == MAS_INFINITO) {
+        printf("\nLa estructura LVO se encuentra vacia.\n");
+        return;
+    }
+
+    // Limpieza de buffer inicial
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+
+    printf("\n====================================================================\n");
+    printf("                  PADRON DE ELECTORES (LVO +inf)\n");
+    printf("====================================================================\n");
+
+    // Iniciamos el recorrido desde el primer nodo (acc)
+    Nodo *actual = lista->acc;
+    int contador = 0; // Como no hay un "for" con "i", llevamos la cuenta manualmente
+
+    // Recorremos mientras el DNI del nodo actual NO sea el +infinito
+    while (actual->dato.dni != MAS_INFINITO) {
+        contador++;
+
+        printf("[%4d] DNI: %-10ld | %-25.25s | %-15.15s | CP: %-4d | Mesa: %-4d | Circ.: %-4d\n",
+               contador,
+               actual->dato.dni,
+               actual->dato.nombreApellido,
+               actual->dato.domicilio,
+               actual->dato.codigoPostal,
+               actual->dato.numeroMesa,
+               actual->dato.circuito);
+
+        // Paginamos la muestra cada 20 registros
+        if (contador % 20 == 0) {
+            printf("\n--- Mostrando %d registros. Presione ENTER para continuar o 'Q' para salir ---", contador);
+
+            char opcion = getchar();
+
+            if (opcion == 'q' || opcion == 'Q') {
+                while ((c = getchar()) != '\n' && c != EOF);
+                printf("\nListado abortado por el usuario.\n");
+                break;
+            }
+            else if (opcion != '\n') {
+                while ((c = getchar()) != '\n' && c != EOF);
+            }
+        }
+
+        // Saltamos al siguiente nodo de la memoria
+        actual = actual->siguiente;
+    }
+
+    printf("====================================================================\n");
+    printf("Fin del listado. Total mostrados: %d electores\n", contador);
+}
+
+
+void MostrarABB(ABB *arbol) {
+    // Verificamos si la estructura está vacía chequeando la raíz
+    if (arbol->raiz == NULL) {
+        printf("\nLa estructura ABB se encuentra vacia.\n");
+        return;
+    }
+
+    // Limpieza de buffer inicial
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+
+    printf("\n==================================================================================\n");
+    printf("           PADRON DE ELECTORES (ABB - Recorrido Preorden Iterativo)\n");
+    printf("==================================================================================\n");
+
+    // Creación de la Pila para hacer el recorrido Iterativo
+    // Y un árbol degenerado (todos en fila) de 2000 elementos ocuparía 2000 lugares en la pila.
+    NodoArbol* pila[2005];
+    int tope = -1;
+
+    // Iniciamos apilando la raíz
+    pila[++tope] = arbol->raiz;
+    int contador = 0;
+
+    // Mientras la pila no esté vacía
+    while (tope >= 0) {
+        // Desapilamos el nodo actual para procesarlo (Visitar Raíz)
+        NodoArbol* actual = pila[tope--];
+        contador++;
+
+        // Preparamos textos para mostrar los DNI de los hijos
+        char infoHI[25] = "HI: No tiene";
+        char infoHD[25] = "HD: No tiene";
+
+        if (actual->hi != NULL) {
+            sprintf(infoHI, "HI: %ld", actual->hi->valor.dni);
+        }
+        if (actual->hd != NULL) {
+            sprintf(infoHD, "HD: %ld", actual->hd->valor.dni);
+        }
+
+        // Mostramos el elector corriente junto a sus conexiones
+        printf("[%4d] DNI: %-10ld | %-20.20s | %-14s | %-14s\n",
+               contador,
+               actual->valor.dni,
+               actual->valor.nombreApellido,
+               infoHI,
+               infoHD);
+
+        // Skip con "Q"
+        if (contador % 20 == 0) {
+            printf("\n--- Mostrando %d registros. Presione ENTER para continuar o 'Q' para salir ---", contador);
+
+            char opcion = getchar();
+            if (opcion == 'q' || opcion == 'Q') {
+                while ((c = getchar()) != '\n' && c != EOF);
+                printf("\nListado abortado por el usuario.\n");
+                break;
+            } else if (opcion != '\n') {
+                while ((c = getchar()) != '\n' && c != EOF);
+            }
+        }
+
+        // Apilamos los hijos.
+        // Como las pilas son LIFO (Last In, First Out), apilamos PRIMERO el DERECHO y LUEGO el IZQUIERDO.
+        // Así, al desapilar en la siguiente vuelta, el Izquierdo sale primero.
+        if (actual->hd != NULL) {
+            pila[++tope] = actual->hd;
+        }
+        if (actual->hi != NULL) {
+            pila[++tope] = actual->hi;
+        }
+    }
+
+    printf("==================================================================================\n");
+    printf("Fin del listado. Total mostrados: %d electores\n", contador);
+}
+
+
+/* ==========================================================================
    MAIN (FUSIONADO Y FORMATEADO)
    ==========================================================================
 */
 
 int main() {
-
-    // Inicialización de Estructuras (LSO, LVO, ABB)
+    // 1. Declaración de Estructuras
     lso miLista;
     LVO lvoPadron;
     ABB abbPadron;
@@ -729,68 +917,125 @@ int main() {
     // Declaración de las Estructuras de Estadísticas
     Estadisticas statsLSO, statsLVO, statsABB;
 
-    printf("Iniciando procesamiento del archivo de operaciones...\n");
+    int opcion;
+    int estructurasCargadas = 0; // Bandera para saber si ya se procesó el archivo
 
-    // Llamamos a la función que lee el archivo y llena las estructuras y métricas
-    int cargaExitosa = memorizarDesdeArchivo(&miLista, &lvoPadron,&abbPadron,&statsLSO, &statsLVO, &statsABB);
+    do {
+        printf("\n======================================================\n");
+        printf("               MENU PRINCIPAL - PADRON                \n");
+        printf("======================================================\n");
+        printf(" 1. Comparacion de Estructuras (Procesar Archivo)\n");
+        printf(" 2. Mostrar Estructura\n");
+        printf(" 3. Salir\n");
+        printf("======================================================\n");
+        printf("Ingrese una opcion: ");
+        scanf("%d", &opcion);
 
-    if (cargaExitosa == 0) {
-        printf("Se aborto la ejecucion debido a un error en el archivo.\n");
-        return 1; // Terminamos con error
-    }
+        switch(opcion) {
+            case 1:
+                printf("\nIniciando procesamiento del archivo de operaciones...\n");
 
-    printf("Procesamiento exitoso.\n");
+                // El TP exige asegurar que las estructuras no contengan ningún dato antes de iniciar.
+                // Tu función memorizarDesdeArchivo ya hace: miLista->cantidad=0, InitLVO() y abb->raiz=NULL.
+                // (Nota para la excelencia: Si el usuario presiona el '1' dos veces seguidas,
+                // idealmente deberías hacer un 'free' de los nodos de LVO y ABB aquí antes de llamar a la función).
 
-    printf("\n-----------------------------|--------------|--------------|--------------|\n");
-    printf("                             |   LVO +inf   |     LSOBB    |      ABB     |\n");
-    printf("-----------------------------|--------------|--------------|--------------|\n");
+                int cargaExitosa = memorizarDesdeArchivo(&miLista, &lvoPadron, &abbPadron, &statsLSO, &statsLVO, &statsABB);
 
-    // --- ALTA ---
-    printf("Alta                         |              |              |              |\n");
-    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.alta.cantidad, statsLSO.alta.cantidad, statsABB.alta.cantidad);
-    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.alta.costo_acu, statsLSO.alta.costo_acu, statsABB.alta.costo_acu);
-    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.alta.costo_max, statsLSO.alta.costo_max, statsABB.alta.costo_max);
-    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
-        statsLVO.alta.cantidad > 0 ? statsLVO.alta.costo_acu / statsLVO.alta.cantidad : 0,
-        statsLSO.alta.cantidad > 0 ? statsLSO.alta.costo_acu / statsLSO.alta.cantidad : 0,
-        statsABB.alta.cantidad > 0 ? statsABB.alta.costo_acu / statsABB.alta.cantidad : 0);
-    printf("-----------------------------|--------------|--------------|--------------|\n");
+                if (cargaExitosa == 0) {
+                    printf("Se aborto la ejecucion debido a un error en el archivo.\n");
+                } else {
+                    estructurasCargadas = 1; // Marcamos que los datos quedaron almacenados
+                    printf("Procesamiento exitoso.\n");
 
-    // --- BAJA ---
-    printf("Baja                         |              |              |              |\n");
-    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.baja.cantidad, statsLSO.baja.cantidad, statsABB.baja.cantidad);
-    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.baja.costo_acu, statsLSO.baja.costo_acu, statsABB.baja.costo_acu);
-    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.baja.costo_max, statsLSO.baja.costo_max, statsABB.baja.costo_max);
-    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
-        statsLVO.baja.cantidad > 0 ? statsLVO.baja.costo_acu / statsLVO.baja.cantidad : 0,
-        statsLSO.baja.cantidad > 0 ? statsLSO.baja.costo_acu / statsLSO.baja.cantidad : 0,
-        statsABB.baja.cantidad > 0 ? statsABB.baja.costo_acu / statsABB.baja.cantidad : 0);
-    printf("-----------------------------|--------------|--------------|--------------|\n");
+                    // --- IMPRESIÓN DE LA TABLA DE COMPARACIÓN DE COSTOS[cite: 3] ---
+                    printf("\n-----------------------------|--------------|--------------|--------------|\n");
+                    printf("                             |   LVO +inf   |     LSOBB    |      ABB     |\n");
+                    printf("-----------------------------|--------------|--------------|--------------|\n");
 
-    // --- EVOCAR EXITOSO ---
-    printf("Evocar exitoso               |              |              |              |\n");
-    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.evocar_exito.cantidad, statsLSO.evocar_exito.cantidad, statsABB.evocar_exito.cantidad);
-    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_exito.costo_acu, statsLSO.evocar_exito.costo_acu, statsABB.evocar_exito.costo_acu);
-    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_exito.costo_max, statsLSO.evocar_exito.costo_max, statsABB.evocar_exito.costo_max);
-    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
-        statsLVO.evocar_exito.cantidad > 0 ? statsLVO.evocar_exito.costo_acu / statsLVO.evocar_exito.cantidad : 0,
-        statsLSO.evocar_exito.cantidad > 0 ? statsLSO.evocar_exito.costo_acu / statsLSO.evocar_exito.cantidad : 0,
-        statsABB.evocar_exito.cantidad > 0 ? statsABB.evocar_exito.costo_acu / statsABB.evocar_exito.cantidad : 0);
-    printf("-----------------------------|--------------|--------------|--------------|\n");
+                    // --- ALTA ---
+                    printf("Alta                         |              |              |              |\n");
+                    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.alta.cantidad, statsLSO.alta.cantidad, statsABB.alta.cantidad);
+                    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.alta.costo_acu, statsLSO.alta.costo_acu, statsABB.alta.costo_acu);
+                    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.alta.costo_max, statsLSO.alta.costo_max, statsABB.alta.costo_max);
+                    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+                        statsLVO.alta.cantidad > 0 ? statsLVO.alta.costo_acu / statsLVO.alta.cantidad : 0,
+                        statsLSO.alta.cantidad > 0 ? statsLSO.alta.costo_acu / statsLSO.alta.cantidad : 0,
+                        statsABB.alta.cantidad > 0 ? statsABB.alta.costo_acu / statsABB.alta.cantidad : 0);
+                    printf("-----------------------------|--------------|--------------|--------------|\n");
 
-    // --- EVOCAR FRACASO ---
-    printf("Evocar fracaso               |              |              |              |\n");
-    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.evocar_fracaso.cantidad, statsLSO.evocar_fracaso.cantidad, statsABB.evocar_fracaso.cantidad);
-    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_fracaso.costo_acu, statsLSO.evocar_fracaso.costo_acu, statsABB.evocar_fracaso.costo_acu);
-    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_fracaso.costo_max, statsLSO.evocar_fracaso.costo_max, statsABB.evocar_fracaso.costo_max);
-    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
-        statsLVO.evocar_fracaso.cantidad > 0 ? statsLVO.evocar_fracaso.costo_acu / statsLVO.evocar_fracaso.cantidad : 0,
-        statsLSO.evocar_fracaso.cantidad > 0 ? statsLSO.evocar_fracaso.costo_acu / statsLSO.evocar_fracaso.cantidad : 0,
-        statsABB.evocar_fracaso.cantidad > 0 ? statsABB.evocar_fracaso.costo_acu / statsABB.evocar_fracaso.cantidad : 0);
-    printf("-----------------------------|--------------|--------------|--------------|\n");
+                    // --- BAJA ---
+                    printf("Baja                         |              |              |              |\n");
+                    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.baja.cantidad, statsLSO.baja.cantidad, statsABB.baja.cantidad);
+                    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.baja.costo_acu, statsLSO.baja.costo_acu, statsABB.baja.costo_acu);
+                    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.baja.costo_max, statsLSO.baja.costo_max, statsABB.baja.costo_max);
+                    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+                        statsLVO.baja.cantidad > 0 ? statsLVO.baja.costo_acu / statsLVO.baja.cantidad : 0,
+                        statsLSO.baja.cantidad > 0 ? statsLSO.baja.costo_acu / statsLSO.baja.cantidad : 0,
+                        statsABB.baja.cantidad > 0 ? statsABB.baja.costo_acu / statsABB.baja.cantidad : 0);
+                    printf("-----------------------------|--------------|--------------|--------------|\n");
 
-    // --- PRUEBA TEÓRICA DE LA FUNCIÓN "LOCALIZAR" ---
-    EvaluarCostosLocalizar(&miLista);
+                    // --- EVOCAR EXITOSO ---
+                    printf("Evocar exitoso               |              |              |              |\n");
+                    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.evocar_exito.cantidad, statsLSO.evocar_exito.cantidad, statsABB.evocar_exito.cantidad);
+                    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_exito.costo_acu, statsLSO.evocar_exito.costo_acu, statsABB.evocar_exito.costo_acu);
+                    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_exito.costo_max, statsLSO.evocar_exito.costo_max, statsABB.evocar_exito.costo_max);
+                    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+                        statsLVO.evocar_exito.cantidad > 0 ? statsLVO.evocar_exito.costo_acu / statsLVO.evocar_exito.cantidad : 0,
+                        statsLSO.evocar_exito.cantidad > 0 ? statsLSO.evocar_exito.costo_acu / statsLSO.evocar_exito.cantidad : 0,
+                        statsABB.evocar_exito.cantidad > 0 ? statsABB.evocar_exito.costo_acu / statsABB.evocar_exito.cantidad : 0);
+                    printf("-----------------------------|--------------|--------------|--------------|\n");
+
+                    // --- EVOCAR FRACASO ---
+                    printf("Evocar fracaso               |              |              |              |\n");
+                    printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.evocar_fracaso.cantidad, statsLSO.evocar_fracaso.cantidad, statsABB.evocar_fracaso.cantidad);
+                    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_fracaso.costo_acu, statsLSO.evocar_fracaso.costo_acu, statsABB.evocar_fracaso.costo_acu);
+                    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_fracaso.costo_max, statsLSO.evocar_fracaso.costo_max, statsABB.evocar_fracaso.costo_max);
+                    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+                        statsLVO.evocar_fracaso.cantidad > 0 ? statsLVO.evocar_fracaso.costo_acu / statsLVO.evocar_fracaso.cantidad : 0,
+                        statsLSO.evocar_fracaso.cantidad > 0 ? statsLSO.evocar_fracaso.costo_acu / statsLSO.evocar_fracaso.cantidad : 0,
+                        statsABB.evocar_fracaso.cantidad > 0 ? statsABB.evocar_fracaso.costo_acu / statsABB.evocar_fracaso.cantidad : 0);
+                    printf("-----------------------------|--------------|--------------|--------------|\n");
+
+                    // Prueba Teórica solicitada en la corrección
+                    EvaluarCostosLocalizar(&miLista);
+                }
+                break;
+
+            case 2:
+                if (estructurasCargadas == 0) {
+                    printf("\nError: Debe ejecutar la 'Comparacion de Estructuras' (Opcion 1) primero para cargar los datos.\n");
+                } else {
+                    int subOpcion;
+                    printf("\n--- MOSTRAR ESTRUCTURA ---\n");
+                    printf("1. Lista Secuencial Ordenada (LSO)\n");
+                    printf("2. Lista Vinculada Ordenada (LVO)\n");
+                    printf("3. Arbol Binario de Busqueda (ABB)\n");
+                    printf("Elija estructura a mostrar: ");
+                    scanf("%d", &subOpcion);
+
+
+                    if (subOpcion == 1) {
+                        MostrarLSO(&miLista);
+                    } else if (subOpcion == 2) {
+                        MostrarLVO(&lvoPadron);
+                    } else if (subOpcion == 3) {
+                        MostrarABB(&abbPadron);
+                    } else {
+                        printf("\nOpcion invalida.\n");
+                    }
+                }
+                break;
+
+            case 3:
+                printf("\nFinalizando programa. Cuidate Masterr\n");
+                break;
+
+            default:
+                printf("\nOpcion no valida. Intente nuevamente.\n");
+        }
+
+    } while(opcion != 3);
 
     return 0;
 }
