@@ -6,7 +6,7 @@
 #include <string.h>
 
 //Constantes
-#define ELECTORES_ESPERADOS 2000
+#define ELECTORES_ESPERADOS 2001
 #define MAS_INFINITO 999999999
 
 //Definicion de struc's Patron
@@ -447,9 +447,9 @@ void AltaABB(ABB *arbol, elector nuevoElector , int *exito,float *costo){
         if(nuevoNodo != NULL){
             nuevoNodo->valor = nuevoElector;
             nuevoNodo->hi = NULL;
-            *costo += 0.5;
+            //*costo += 0.5;
             nuevoNodo->hd = NULL;
-            *costo += 0.5;
+            //*costo += 0.5;
 
             if(pos == NULL){
                 arbol->raiz = nuevoNodo;
@@ -712,13 +712,59 @@ int memorizarDesdeArchivo(lso *miLista, LVO *lvo, ABB *abb, Estadisticas *statsL
     return 1;
 }
 
+
+/*
+========================
+FUNCIONES PARA DESTRUIR ESTRUCTURA
+========================
+*/
+
+void DestruirNodosABB(NodoArbol *nodo) {
+    if (nodo != NULL) {
+        DestruirNodosABB(nodo->hi); // Liberar subárbol izquierdo
+        DestruirNodosABB(nodo->hd); // Liberar subárbol derecho
+        free(nodo);                 // Liberar el nodo actual
+    }
+}
+
+void DestruirABB(ABB *arbol) {
+    if (arbol != NULL) {
+        DestruirNodosABB(arbol->raiz);
+        arbol->raiz = NULL;
+    }
+
+}
+
+
+void DestruirLVO(LVO *l) {
+    Nodo *actual = l->acc;
+    Nodo *siguienteNodo;
+
+    // Recorremos la lista hasta llegar al final (NULL)
+    while (actual != NULL) {
+        siguienteNodo = actual->siguiente; // Guardamos el enganche
+        free(actual);                      // Liberamos el nodo actual
+        actual = siguienteNodo;            // Avanzamos al siguiente
+    }
+
+    // Por seguridad, reseteamos los punteros de la estructura
+    ResetLVO(l);
+}
+
+void DestruirLSO(lso *lista) {
+    lista->cantidad = 0;
+}
+
+
+
+
+
 /* ==========================================================================
     FUNCIONES PARA MOSTRAR LAS ESTRUCTURAS PAPÁ
    ==========================================================================
 */
 
 void MostrarLSO(lso *lista) {
-    // 1. Verificamos si la estructura está vacía[cite: 3]
     if (lista->cantidad == 0) {
         printf("\nLa estructura LSOBB se encuentra vacia.\n");
         return;
@@ -732,7 +778,6 @@ void MostrarLSO(lso *lista) {
     printf("         PADRON DE ELECTORES (LSOBB) - Total: %d electores\n", lista->cantidad);
     printf("====================================================================\n");
 
-    // 2. Mostramos todos los elementos[cite: 3]
     for (int i = 0; i < lista->cantidad; i++) {
         printf("[%4d] DNI: %-10ld | %-25.25s | %-15.15s | CP: %-4d | Mesa: %-4d | Circ.: %-4d\n",
                i + 1,
@@ -743,13 +788,12 @@ void MostrarLSO(lso *lista) {
                lista->electores[i].numeroMesa,
                lista->electores[i].circuito);
 
-        // 3. Paginamos la muestra cada 20 registros[cite: 3]
+        //Mostramos 20
         if ((i + 1) % 20 == 0 && (i + 1) < lista->cantidad) {
             printf("\n--- Mostrando %d de %d. Presione ENTER para continuar o 'Q' para salir ---", i + 1, lista->cantidad);
 
             char opcion = getchar();
 
-            // Si el usuario presiona 'Q' o 'q', rompemos el ciclo for
             if (opcion == 'q' || opcion == 'Q') {
                 // Limpiamos el ENTER que quedó en el buffer tras presionar la Q
                 while ((c = getchar()) != '\n' && c != EOF);
@@ -903,13 +947,61 @@ void MostrarABB(ABB *arbol) {
 }
 
 
+void MostrarNodosABB(const NodoArbol *nodo, int *contador) {
+    if (nodo != NULL) {
+        MostrarNodosABB(nodo->hi, contador); // 1. Subárbol izquierdo
+
+        printf("%-10ld | %-25s | %-20s | %-4d | %-5d | %-8d\n",
+               nodo->valor.dni,
+               nodo->valor.nombreApellido,
+               nodo->valor.domicilio,
+               nodo->valor.codigoPostal,
+               nodo->valor.numeroMesa,
+               nodo->valor.circuito);
+
+        (*contador)++; // Sumamos 1 al contador
+
+        // Pausar cada 15 registros
+        if (*contador % 15 == 0) {
+            printf("\n--- Mostrados: %d registros. Presiona ENTER para continuar ---", *contador);
+            getchar();
+
+
+            printf("\n%-10s|%-25s|%-20s|%-4s|%-5s|%-8s\n",
+                   "DNI", "NOMBRE Y APELLIDO", "DOMICILIO", "CP", "MESA", "CIRCUITO");
+            printf("--------------------------------------------------------------------------------------\n");
+        }
+
+        MostrarNodosABB(nodo->hd, contador);  //Subárbol derecho
+    }
+}
+
+void MostrarRecABB(const ABB *arbol) {
+    int contador = 0; // Inicializamos el contador en 0
+
+    if (arbol != NULL && arbol->raiz != NULL) {
+        printf("--- Listado de Electores ABB ---\n");
+
+        fflush(stdin);
+
+        // Llamamos a la recursiva pasando la dirección de memoria del contador
+        MostrarNodosABB(arbol->raiz, &contador);
+
+        printf("\n---------------------------------------------------------\n");
+        printf("Fin del listado. Total de electores mostrados: %d\n", contador);
+    } else {
+        printf("El árbol está vacío.\n");
+    }
+}
+
+
 /* ==========================================================================
    MAIN (FUSIONADO Y FORMATEADO)
    ==========================================================================
 */
 
 int main() {
-    // 1. Declaración de Estructuras
+   //Declaración de Estructuras
     lso miLista;
     LVO lvoPadron;
     ABB abbPadron;
@@ -935,10 +1027,9 @@ int main() {
             case 1:
                 printf("\nIniciando procesamiento del archivo de operaciones...\n");
 
-                // El TP exige asegurar que las estructuras no contengan ningún dato antes de iniciar.
-                // Tu función memorizarDesdeArchivo ya hace: miLista->cantidad=0, InitLVO() y abb->raiz=NULL.
-                // (Nota para la excelencia: Si el usuario presiona el '1' dos veces seguidas,
-                // idealmente deberías hacer un 'free' de los nodos de LVO y ABB aquí antes de llamar a la función).
+                DestruirABB(&abbPadron);
+                DestruirLSO(&miLista);
+                DestruirLVO(&lvoPadron);
 
                 int cargaExitosa = memorizarDesdeArchivo(&miLista, &lvoPadron, &abbPadron, &statsLSO, &statsLVO, &statsABB);
 
@@ -1020,7 +1111,8 @@ int main() {
                     } else if (subOpcion == 2) {
                         MostrarLVO(&lvoPadron);
                     } else if (subOpcion == 3) {
-                        MostrarABB(&abbPadron);
+                        //MostrarABB(&abbPadron);
+                        MostrarRecABB(&abbPadron);
                     } else {
                         printf("\nOpcion invalida.\n");
                     }
