@@ -6,7 +6,7 @@
 #include <string.h>
 
 //Constantes
-#define ELECTORES_ESPERADOS 2001
+#define ELECTORES_ESPERADOS 2000
 #define MAS_INFINITO 999999999
 
 //Definicion de struc's Patron
@@ -232,13 +232,13 @@ void EvaluarCostosLocalizar(lso *listaLSO) {
     printf("\n\n=== METRICAS PURAS DE 'LOCALIZAR' (USANDO VECTOR DE MARCAS) ===\n");
     if (cantExitos > 0) {
         printf("Localizacion Exitosa (N = %d):\n", cantExitos);
-        printf("  - Costo Medio (Esperado): %.2f celdas\n", costoTotalExito / cantExitos);
-        printf("  - Peor Escenario (Max): %.2f celdas\n", costoMaximoExito);
+        printf("  - Costo Medio (Esperado): %.3f celdas\n", costoTotalExito / cantExitos);
+        printf("  - Peor Escenario (Max): %.3f celdas\n", costoMaximoExito);
     }
     if (cantFracasos > 0) {
         printf("\nLocalizacion Fallida (N = %d):\n", cantFracasos);
-        printf("  - Costo Medio (Esperado): %.2f celdas\n", costoTotalFracaso / cantFracasos);
-        printf("  - Peor Escenario (Max): %.2f celdas\n", costoMaximoFracaso);
+        printf("  - Costo Medio (Esperado): %.3f celdas\n", costoTotalFracaso / cantFracasos);
+        printf("  - Peor Escenario (Max): %.3f celdas\n", costoMaximoFracaso);
     }
     printf("=================================================================\n");
 }
@@ -404,13 +404,18 @@ typedef struct {
     NodoArbol *raiz; // Puntero de inicio del árbol
 } ABB;
 
-void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padreRetornar,float *costo){
+void LocalizarABB(ABB *arbol, long x, NodoArbol **pos, int *exito, NodoArbol **padreRetornar, float *costo){
     NodoArbol *p = arbol->raiz;
     NodoArbol *padre = NULL;
     *costo = 0.0;
 
-    while(p != NULL && p->valor.dni != x){
-        (*costo)++;
+    while(p != NULL){
+        (*costo)++; // 1. Cobramos la celda que acabamos de pisar
+
+        if (p->valor.dni == x) {
+            break;  // 2. Lo encontramos, detenemos la búsqueda inmediatamente
+        }
+
         padre = p;
         if(p->valor.dni < x){
             p = p->hd;
@@ -427,8 +432,8 @@ void LocalizarABB(ABB *arbol, int x, NodoArbol **pos,int *exito,NodoArbol **padr
         *pos = padre;
     }
 
-    if(padreRetornar !=NULL){
-        *padreRetornar = padre; //Retorno el padre para poder utilizarlo en la baja
+    if(padreRetornar != NULL){
+        *padreRetornar = padre; // Retorno el padre para poder utilizarlo en la baja
     }
 }
 
@@ -542,19 +547,14 @@ void BajaABB(ABB *arbol,elector electorBaja,int *exito,float *costo){
     }
 }
 
-/*void EvocarLVO(LVO *lista, long dniBuscar, elector *eRecuperado, int *exito,float *costo){
-    Nodo *posLVO;
-    LocalizarLVO(lista,dniBuscar,&posLVO,exito,costo);
-    if(*exito == 1){
-        *eRecuperado = posLVO->dato;
-    }
-}
-*/
 
-void EvocarABB(ABB *arbol, int dniBuscado, elector *electorRetornado, int *exito, float *costo){
+
+void EvocarABB(ABB *arbol, long dniBuscado, elector *electorRetornado, int *exito, float *costo){
     NodoArbol *pos = NULL;
-    //Llamamos al localizar
-    LocalizarABB(arbol,dniBuscado,&pos,exito,NULL, costo);
+
+    // Llamamos al localizar
+    LocalizarABB(arbol, dniBuscado, &pos, exito, NULL, costo);
+
     if(*exito == 1){
         *electorRetornado = pos->valor;
     }
@@ -1039,7 +1039,7 @@ int main() {
                     estructurasCargadas = 1; // Marcamos que los datos quedaron almacenados
                     printf("Procesamiento exitoso.\n");
 
-                    // --- IMPRESIÓN DE LA TABLA DE COMPARACIÓN DE COSTOS[cite: 3] ---
+                    // --- IMPRESIÓN DE LA TABLA DE COMPARACIÓN DE COSTOS ---
                     printf("\n-----------------------------|--------------|--------------|--------------|\n");
                     printf("                             |   LVO +inf   |     LSOBB    |      ABB     |\n");
                     printf("-----------------------------|--------------|--------------|--------------|\n");
@@ -1047,9 +1047,9 @@ int main() {
                     // --- ALTA ---
                     printf("Alta                         |              |              |              |\n");
                     printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.alta.cantidad, statsLSO.alta.cantidad, statsABB.alta.cantidad);
-                    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.alta.costo_acu, statsLSO.alta.costo_acu, statsABB.alta.costo_acu);
-                    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.alta.costo_max, statsLSO.alta.costo_max, statsABB.alta.costo_max);
-                    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+                    printf("  Costo Acumulado            | %12.3f | %12.3f | %12.3f |\n", statsLVO.alta.costo_acu, statsLSO.alta.costo_acu, statsABB.alta.costo_acu);
+                    printf("  Costo Maximo               | %12.3f | %12.3f | %12.3f |\n", statsLVO.alta.costo_max, statsLSO.alta.costo_max, statsABB.alta.costo_max);
+                    printf("  Costo Promedio             | %12.3f | %12.3f | %12.3f |\n",
                         statsLVO.alta.cantidad > 0 ? statsLVO.alta.costo_acu / statsLVO.alta.cantidad : 0,
                         statsLSO.alta.cantidad > 0 ? statsLSO.alta.costo_acu / statsLSO.alta.cantidad : 0,
                         statsABB.alta.cantidad > 0 ? statsABB.alta.costo_acu / statsABB.alta.cantidad : 0);
@@ -1058,9 +1058,9 @@ int main() {
                     // --- BAJA ---
                     printf("Baja                         |              |              |              |\n");
                     printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.baja.cantidad, statsLSO.baja.cantidad, statsABB.baja.cantidad);
-                    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.baja.costo_acu, statsLSO.baja.costo_acu, statsABB.baja.costo_acu);
-                    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.baja.costo_max, statsLSO.baja.costo_max, statsABB.baja.costo_max);
-                    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+                    printf("  Costo Acumulado            | %12.3f | %12.3f | %12.3f |\n", statsLVO.baja.costo_acu, statsLSO.baja.costo_acu, statsABB.baja.costo_acu);
+                    printf("  Costo Maximo               | %12.3f | %12.3f | %12.3f |\n", statsLVO.baja.costo_max, statsLSO.baja.costo_max, statsABB.baja.costo_max);
+                    printf("  Costo Promedio             | %12.3f | %12.3f | %12.3f |\n",
                         statsLVO.baja.cantidad > 0 ? statsLVO.baja.costo_acu / statsLVO.baja.cantidad : 0,
                         statsLSO.baja.cantidad > 0 ? statsLSO.baja.costo_acu / statsLSO.baja.cantidad : 0,
                         statsABB.baja.cantidad > 0 ? statsABB.baja.costo_acu / statsABB.baja.cantidad : 0);
@@ -1069,9 +1069,9 @@ int main() {
                     // --- EVOCAR EXITOSO ---
                     printf("Evocar exitoso               |              |              |              |\n");
                     printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.evocar_exito.cantidad, statsLSO.evocar_exito.cantidad, statsABB.evocar_exito.cantidad);
-                    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_exito.costo_acu, statsLSO.evocar_exito.costo_acu, statsABB.evocar_exito.costo_acu);
-                    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_exito.costo_max, statsLSO.evocar_exito.costo_max, statsABB.evocar_exito.costo_max);
-                    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+                    printf("  Costo Acumulado            | %12.3f | %12.3f | %12.3f |\n", statsLVO.evocar_exito.costo_acu, statsLSO.evocar_exito.costo_acu, statsABB.evocar_exito.costo_acu);
+                    printf("  Costo Maximo               | %12.3f | %12.3f | %12.3f |\n", statsLVO.evocar_exito.costo_max, statsLSO.evocar_exito.costo_max, statsABB.evocar_exito.costo_max);
+                    printf("  Costo Promedio             | %12.3f | %12.3f | %12.3f |\n",
                         statsLVO.evocar_exito.cantidad > 0 ? statsLVO.evocar_exito.costo_acu / statsLVO.evocar_exito.cantidad : 0,
                         statsLSO.evocar_exito.cantidad > 0 ? statsLSO.evocar_exito.costo_acu / statsLSO.evocar_exito.cantidad : 0,
                         statsABB.evocar_exito.cantidad > 0 ? statsABB.evocar_exito.costo_acu / statsABB.evocar_exito.cantidad : 0);
@@ -1080,9 +1080,9 @@ int main() {
                     // --- EVOCAR FRACASO ---
                     printf("Evocar fracaso               |              |              |              |\n");
                     printf("  Cantidad                   | %12d | %12d | %12d |\n", statsLVO.evocar_fracaso.cantidad, statsLSO.evocar_fracaso.cantidad, statsABB.evocar_fracaso.cantidad);
-                    printf("  Costo Acumulado            | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_fracaso.costo_acu, statsLSO.evocar_fracaso.costo_acu, statsABB.evocar_fracaso.costo_acu);
-                    printf("  Costo Maximo               | %12.2f | %12.2f | %12.2f |\n", statsLVO.evocar_fracaso.costo_max, statsLSO.evocar_fracaso.costo_max, statsABB.evocar_fracaso.costo_max);
-                    printf("  Costo Promedio             | %12.2f | %12.2f | %12.2f |\n",
+                    printf("  Costo Acumulado            | %12.3f | %12.3f | %12.3f |\n", statsLVO.evocar_fracaso.costo_acu, statsLSO.evocar_fracaso.costo_acu, statsABB.evocar_fracaso.costo_acu);
+                    printf("  Costo Maximo               | %12.3f | %12.3f | %12.3f |\n", statsLVO.evocar_fracaso.costo_max, statsLSO.evocar_fracaso.costo_max, statsABB.evocar_fracaso.costo_max);
+                    printf("  Costo Promedio             | %12.3f | %12.3f | %12.3f |\n",
                         statsLVO.evocar_fracaso.cantidad > 0 ? statsLVO.evocar_fracaso.costo_acu / statsLVO.evocar_fracaso.cantidad : 0,
                         statsLSO.evocar_fracaso.cantidad > 0 ? statsLSO.evocar_fracaso.costo_acu / statsLSO.evocar_fracaso.cantidad : 0,
                         statsABB.evocar_fracaso.cantidad > 0 ? statsABB.evocar_fracaso.costo_acu / statsABB.evocar_fracaso.cantidad : 0);
