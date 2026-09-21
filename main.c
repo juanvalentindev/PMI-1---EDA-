@@ -1,3 +1,62 @@
+/*
+
+RESULTADO DE COMPARACIÓN DE ESTRUCTURAS
+-----------------------------|--------------|--------------|--------------|
+                             |   LVO +inf   |     LSOBB    |      ABB     |
+-----------------------------|--------------|--------------|--------------|
+Alta                         |              |              |              |
+  Cantidad                   |         2746 |         2745 |         2746 |
+  Costo Acumulado            |     2746.000 |  1133872.000 |     1373.000 |
+  Costo Maximo               |        1.000 |     1932.000 |        0.500 |
+  Costo Promedio             |        1.000 |      413.068 |        0.500 |
+-----------------------------|--------------|--------------|--------------|
+Baja                         |              |              |              |
+  Cantidad                   |         2001 |         2000 |         2001 |
+  Costo Acumulado            |     1000.500 |  1005222.000 |     2047.500 |
+  Costo Maximo               |        0.500 |     1893.000 |        1.500 |
+  Costo Promedio             |        0.500 |      502.611 |        1.023 |
+-----------------------------|--------------|--------------|--------------|
+Evocar exitoso               |              |              |              |
+  Cantidad                   |         2175 |         2174 |         2175 |
+  Costo Acumulado            |  1232798.000 |    22046.000 |    25749.000 |
+  Costo Maximo               |     1994.000 |       11.000 |       22.000 |
+  Costo Promedio             |      566.804 |       10.141 |       11.839 |
+-----------------------------|--------------|--------------|--------------|
+Evocar fracaso               |              |              |              |
+  Cantidad                   |         2053 |         2054 |         2053 |
+  Costo Acumulado            |   951510.000 |    20298.000 |    24701.000 |
+  Costo Maximo               |     1206.000 |       11.000 |       21.000 |
+  Costo Promedio             |      463.473 |        9.882 |       12.032 |
+-----------------------------|--------------|--------------|--------------|
+
+Para concluir, y partiendo del hecho de que contamos con una cantidad de datos
+muy grandes, podemos notar que:
+
+1. En cuanto altas: Podemos notar que dada la gran cantidad de datos ingresados
+afecta totalmente el costo de LSOBB en funcion de los corrimientos, siendo la misma, la estructura menos eficiente para dichas operaciones.
+Podemos notar tambien que la LVO es una alternativa, ya que la modificación de punteros siempre es la misma (dos punteros) y por tanto la convierte en una opción viable.
+Pero es indiscutible la eficiencia el Arbol Binario de Busqueda, que como maximo representa un costo de 0,50, siendo mas eficiente que la Lista vinculada ordenada.
+
+2. En cuanto a bajas: Sin ser redundante, se repite la misma situación descrita en el inciso anterior, la Lista secuencial con busqueda binaria es extremedamente costosa, por las razones explicadas anteriormente.
+Aqui surge una pecurialidad, y es que la lista vinculada ordenada, debido a que su costo maximo representa solo 0,5 y dada la entrada de datos, es
+mas eficiente que el Arbol.
+
+3. Evocar exitoso y fracasado: La lista vinculada ordenada con terminación dada por contenido,
+representa costos elevados para esta operación, debido a que la unica manera de examinar la estructura es una busqueda secuencial. Aqui tambien podemos observar que la lista secuencial ordenada por busqueda binaria, representa costos minimos, debido a la caractersitica de la busqueda realizada. Siendo el arbol, la estructura que es una buena opción(pero no la mejor ) para localizar, debiido a sus costos cercanos a la lso.
+
+
+Podemos concluir, que para uso general, la estructura equilibrada es el Arbol Binario de Busqueda, debido a su orden 0(Log n), destacando para la inserción de datos, y en las demas operaciónes logra costos equilibrados.
+En cambio, la lvo, no es una estructura conveniente para una gran cantidad de datos, ya que no mantiene costos baratos, sobre todo en las localizaciónes. La LSO en cambio, si bien tiene el mismo orden 0(log n), su entrada de datos es estatica, no crece, es decir que serviria si se conciera espeficicamente el universo de datos, donde se necesite mas realizar consultas, mas que altas y bajas.
+
+
+
+
+*/
+
+
+
+
+
 // Librerias
 #include <stdio.h>
 #include <stdlib.h>
@@ -410,10 +469,10 @@ void LocalizarABB(ABB *arbol, long x, NodoArbol **pos, int *exito, NodoArbol **p
     *costo = 0.0;
 
     while(p != NULL){
-        (*costo)++; // 1. Cobramos la celda que acabamos de pisar
+        (*costo)++;
 
         if (p->valor.dni == x) {
-            break;  // 2. Lo encontramos, detenemos la búsqueda inmediatamente
+            break;
         }
 
         padre = p;
@@ -789,7 +848,7 @@ void MostrarLSO(lso *lista) {
                lista->electores[i].circuito);
 
         //Mostramos 20
-        if ((i + 1) % 20 == 0 && (i + 1) < lista->cantidad) {
+        if ((i + 1) %  20 == 0 && (i + 1) < lista->cantidad) {
             printf("\n--- Mostrando %d de %d. Presione ENTER para continuar o 'Q' para salir ---", i + 1, lista->cantidad);
 
             char opcion = getchar();
@@ -812,7 +871,8 @@ void MostrarLSO(lso *lista) {
 
 
 void MostrarLVO(LVO *lista) {
-    // Verificamos si la estructura está vacía
+
+    // vemos si la estructura está vacía
     if (lista->acc->dato.dni == MAS_INFINITO) {
         printf("\nLa estructura LVO se encuentra vacia.\n");
         return;
@@ -828,7 +888,7 @@ void MostrarLVO(LVO *lista) {
 
     // Iniciamos el recorrido desde el primer nodo (acc)
     Nodo *actual = lista->acc;
-    int contador = 0; // Como no hay un "for" con "i", llevamos la cuenta manualmente
+    int contador = 0;
 
     // Recorremos mientras el DNI del nodo actual NO sea el +infinito
     while (actual->dato.dni != MAS_INFINITO) {
@@ -843,7 +903,7 @@ void MostrarLVO(LVO *lista) {
                actual->dato.numeroMesa,
                actual->dato.circuito);
 
-        // Paginamos la muestra cada 20 registros
+        // mostramos cada
         if (contador % 20 == 0) {
             printf("\n--- Mostrando %d registros. Presione ENTER para continuar o 'Q' para salir ---", contador);
 
@@ -867,7 +927,6 @@ void MostrarLVO(LVO *lista) {
     printf("Fin del listado. Total mostrados: %d electores\n", contador);
 }
 
-
 void MostrarABB(ABB *arbol) {
     // Verificamos si la estructura está vacía chequeando la raíz
     if (arbol->raiz == NULL) {
@@ -880,11 +939,10 @@ void MostrarABB(ABB *arbol) {
     while ((c = getchar()) != '\n' && c != EOF);
 
     printf("\n==================================================================================\n");
-    printf("           PADRON DE ELECTORES (ABB - Recorrido Preorden Iterativo)\n");
+    printf("             PADRON DE ELECTORES (ABB - Recorrido Preorden Iterativo)\n");
     printf("==================================================================================\n");
 
     // Creación de la Pila para hacer el recorrido Iterativo
-    // Y un árbol degenerado (todos en fila) de 2000 elementos ocuparía 2000 lugares en la pila.
     NodoArbol* pila[2005];
     int tope = -1;
 
@@ -894,30 +952,31 @@ void MostrarABB(ABB *arbol) {
 
     // Mientras la pila no esté vacía
     while (tope >= 0) {
+
         // Desapilamos el nodo actual para procesarlo (Visitar Raíz)
         NodoArbol* actual = pila[tope--];
         contador++;
 
         // Preparamos textos para mostrar los DNI de los hijos
-        char infoHI[25] = "HI: No tiene";
-        char infoHD[25] = "HD: No tiene";
+        char infoHI[25] = "No tiene";
+        char infoHD[25] = "No tiene";
 
         if (actual->hi != NULL) {
-            sprintf(infoHI, "HI: %ld", actual->hi->valor.dni);
+            sprintf(infoHI, "%ld", actual->hi->valor.dni);
         }
         if (actual->hd != NULL) {
-            sprintf(infoHD, "HD: %ld", actual->hd->valor.dni);
+            sprintf(infoHD, "%ld", actual->hd->valor.dni);
         }
 
-        // Mostramos el elector corriente junto a sus conexiones
-        printf("[%4d] DNI: %-10ld | %-20.20s | %-14s | %-14s\n",
-               contador,
-               actual->valor.dni,
-               actual->valor.nombreApellido,
-               infoHI,
-               infoHD);
+        printf("[%4d] Nombre: %-25s | DNI: %ld\n", contador, actual->valor.nombreApellido, actual->valor.dni);
+        printf("       Domicilio: %-22s | CP: %-4d | Mesa: %-4d | Circuito: %d\n",
+               actual->valor.domicilio,
+               actual->valor.codigoPostal,
+               actual->valor.numeroMesa,
+               actual->valor.circuito);
+        printf("       Hijo Izquierdo: %-16s | Hijo Derecho: %s\n", infoHI, infoHD);
+        printf("----------------------------------------------------------------------------------\n");
 
-        // Skip con "Q"
         if (contador % 20 == 0) {
             printf("\n--- Mostrando %d registros. Presione ENTER para continuar o 'Q' para salir ---", contador);
 
@@ -933,7 +992,6 @@ void MostrarABB(ABB *arbol) {
 
         // Apilamos los hijos.
         // Como las pilas son LIFO (Last In, First Out), apilamos PRIMERO el DERECHO y LUEGO el IZQUIERDO.
-        // Así, al desapilar en la siguiente vuelta, el Izquierdo sale primero.
         if (actual->hd != NULL) {
             pila[++tope] = actual->hd;
         }
@@ -947,53 +1005,13 @@ void MostrarABB(ABB *arbol) {
 }
 
 
-void MostrarNodosABB(const NodoArbol *nodo, int *contador) {
-    if (nodo != NULL) {
-        MostrarNodosABB(nodo->hi, contador); // 1. Subárbol izquierdo
-
-        printf("%-10ld | %-25s | %-20s | %-4d | %-5d | %-8d\n",
-               nodo->valor.dni,
-               nodo->valor.nombreApellido,
-               nodo->valor.domicilio,
-               nodo->valor.codigoPostal,
-               nodo->valor.numeroMesa,
-               nodo->valor.circuito);
-
-        (*contador)++; // Sumamos 1 al contador
-
-        // Pausar cada 15 registros
-        if (*contador % 15 == 0) {
-            printf("\n--- Mostrados: %d registros. Presiona ENTER para continuar ---", *contador);
-            getchar();
-
-
-            printf("\n%-10s|%-25s|%-20s|%-4s|%-5s|%-8s\n",
-                   "DNI", "NOMBRE Y APELLIDO", "DOMICILIO", "CP", "MESA", "CIRCUITO");
-            printf("--------------------------------------------------------------------------------------\n");
-        }
-
-        MostrarNodosABB(nodo->hd, contador);  //Subárbol derecho
-    }
+void LimpiarPantalla() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
 }
-
-void MostrarRecABB(const ABB *arbol) {
-    int contador = 0; // Inicializamos el contador en 0
-
-    if (arbol != NULL && arbol->raiz != NULL) {
-        printf("--- Listado de Electores ABB ---\n");
-
-        fflush(stdin);
-
-        // Llamamos a la recursiva pasando la dirección de memoria del contador
-        MostrarNodosABB(arbol->raiz, &contador);
-
-        printf("\n---------------------------------------------------------\n");
-        printf("Fin del listado. Total de electores mostrados: %d\n", contador);
-    } else {
-        printf("El árbol está vacío.\n");
-    }
-}
-
 
 /* ==========================================================================
    MAIN (FUSIONADO Y FORMATEADO)
@@ -1013,6 +1031,7 @@ int main() {
     int estructurasCargadas = 0; // Bandera para saber si ya se procesó el archivo
 
     do {
+        LimpiarPantalla();
         printf("\n======================================================\n");
         printf("               MENU PRINCIPAL - PADRON                \n");
         printf("======================================================\n");
@@ -1022,6 +1041,7 @@ int main() {
         printf("======================================================\n");
         printf("Ingrese una opcion: ");
         scanf("%d", &opcion);
+        LimpiarPantalla();
 
         switch(opcion) {
             case 1:
@@ -1090,12 +1110,20 @@ int main() {
 
                     // Prueba Teórica solicitada en la corrección
                     EvaluarCostosLocalizar(&miLista);
+                    int c;
+                    while ((c = getchar()) != '\n' && c != EOF);
+                    getchar();
                 }
                 break;
 
             case 2:
+
+
                 if (estructurasCargadas == 0) {
                     printf("\nError: Debe ejecutar la 'Comparacion de Estructuras' (Opcion 1) primero para cargar los datos.\n");
+                    int c;
+                    while ((c = getchar()) != '\n' && c != EOF);
+                    getchar();
                 } else {
                     int subOpcion;
                     printf("\n--- MOSTRAR ESTRUCTURA ---\n");
@@ -1111,8 +1139,8 @@ int main() {
                     } else if (subOpcion == 2) {
                         MostrarLVO(&lvoPadron);
                     } else if (subOpcion == 3) {
-                        //MostrarABB(&abbPadron);
-                        MostrarRecABB(&abbPadron);
+                        MostrarABB(&abbPadron);
+                        //MostrarRecABB(&abbPadron);
                     } else {
                         printf("\nOpcion invalida.\n");
                     }
@@ -1130,4 +1158,5 @@ int main() {
     } while(opcion != 3);
 
     return 0;
+
 }
