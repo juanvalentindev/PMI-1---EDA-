@@ -1,5 +1,5 @@
 /*
-
+Grupo 28: Ezequiel Wanzo y Juan Quiroga
 RESULTADO DE COMPARACIÓN DE ESTRUCTURAS
 -----------------------------|--------------|--------------|--------------|
                              |   LVO +inf   |     LSOBB    |      ABB     |
@@ -33,24 +33,22 @@ Para concluir, y partiendo del hecho de que contamos con una cantidad de datos
 muy grandes, podemos notar que:
 
 1. En cuanto altas: Podemos notar que dada la gran cantidad de datos ingresados
-afecta totalmente el costo de LSOBB en funcion de los corrimientos, siendo la misma, la estructura menos eficiente para dichas operaciones.
+afecta totalmente el costo de LSOBB en funcion de los corrimientos, siendo la misma, la estructura menos eficiente para dicha operacion.
 Podemos notar tambien que la LVO es una alternativa, ya que la modificación de punteros siempre es la misma (dos punteros) y por tanto la convierte en una opción viable.
-Pero es indiscutible la eficiencia el Arbol Binario de Busqueda, que como maximo representa un costo de 0,50, siendo mas eficiente que la Lista vinculada ordenada.
+aun asi, en el proyecto no tenemos en cuenta que para realizar un alta debemos localizar.
+Pero es indiscutible la eficiencia el Arbol Binario de Busqueda, que como maximo representa un costo de 0,50, siendo mas eficiente que la Lista vinculada ordenada O(log n)
 
 2. En cuanto a bajas: Sin ser redundante, se repite la misma situación descrita en el inciso anterior, la Lista secuencial con busqueda binaria es extremedamente costosa, por las razones explicadas anteriormente.
 Aqui surge una pecurialidad, y es que la lista vinculada ordenada, debido a que su costo maximo representa solo 0,5 y dada la entrada de datos, es
-mas eficiente que el Arbol.
+mas eficiente que el Arbol, ya que si se da de baja un elector con dos hijos, se debe reestructurar toda la rama, aumentando el costo estructural maximo a 1.50
 
 3. Evocar exitoso y fracasado: La lista vinculada ordenada con terminación dada por contenido,
 representa costos elevados para esta operación, debido a que la unica manera de examinar la estructura es una busqueda secuencial. Aqui tambien podemos observar que la lista secuencial ordenada por busqueda binaria, representa costos minimos, debido a la caractersitica de la busqueda realizada. Siendo el arbol, la estructura que es una buena opción(pero no la mejor ) para localizar, debiido a sus costos cercanos a la lso.
 
 
-Podemos concluir, que para uso general, la estructura equilibrada es el Arbol Binario de Busqueda, debido a su orden 0(Log n), destacando para la inserción de datos, y en las demas operaciónes logra costos equilibrados.
-En cambio, la lvo, no es una estructura conveniente para una gran cantidad de datos, ya que no mantiene costos baratos, sobre todo en las localizaciónes. La LSO en cambio, si bien tiene el mismo orden 0(log n), su entrada de datos es estatica, no crece, es decir que serviria si se conciera espeficicamente el universo de datos, donde se necesite mas realizar consultas, mas que altas y bajas.
-
-
-
-
+Podemos concluir, que para uso general, la estructura equilibrada es el Arbol Binario de Busqueda,mantiene costos logaritmos 0(Log n) consistentes en la localización como en la modificación.
+En cambio, la lvo, no es una estructura conveniente para una gran cantidad de datos, su bajo costo en la modificación de punteros no logra compensar el tiempo perdido en localizar los registros.
+Para finalizar, la LSO, es eficiente en sus operaciones de localizar, pero muy costosa en sus operaciónes de altas y bajas, por lo cual, tiene una eficiente aplicación para localizar datos,
 */
 
 
