@@ -262,43 +262,7 @@ void AltaLSO(lso *lista, elector nuevoElector, int *exito){
     }
 }
 
-void EvaluarCostosLocalizar(lso *listaLSO) {
-    float costoTotalExito = 0, costoMaximoExito = 0;
-    int cantExitos = 0;
 
-    float costoTotalFracaso = 0, costoMaximoFracaso = 0;
-    int cantFracasos = 0;
-
-    for (int i = 0; i < totalHistorico; i++) {
-        int pos;
-        int exito;
-        metrica_celdas_LSO = 0;
-        LocalizarLSO(listaLSO, &pos, bancoElectores[i].dni, &exito);
-
-        if (marcas[i] == 1) {
-            costoTotalExito += metrica_celdas_LSO;
-            if (metrica_celdas_LSO > costoMaximoExito) costoMaximoExito = metrica_celdas_LSO;
-            cantExitos++;
-        } else {
-            costoTotalFracaso += metrica_celdas_LSO;
-            if (metrica_celdas_LSO > costoMaximoFracaso) costoMaximoFracaso = metrica_celdas_LSO;
-            cantFracasos++;
-        }
-    }
-
-    printf("\n\n=== METRICAS PURAS DE 'LOCALIZAR' (USANDO VECTOR DE MARCAS) ===\n");
-    if (cantExitos > 0) {
-        printf("Localizacion Exitosa (N = %d):\n", cantExitos);
-        printf("  - Costo Medio (Esperado): %.3f celdas\n", costoTotalExito / cantExitos);
-        printf("  - Peor Escenario (Max): %.3f celdas\n", costoMaximoExito);
-    }
-    if (cantFracasos > 0) {
-        printf("\nLocalizacion Fallida (N = %d):\n", cantFracasos);
-        printf("  - Costo Medio (Esperado): %.3f celdas\n", costoTotalFracaso / cantFracasos);
-        printf("  - Peor Escenario (Max): %.3f celdas\n", costoMaximoFracaso);
-    }
-    printf("=================================================================\n");
-}
 
 /* ==========================================================================
    2. LISTA VINCULADA ORDENADA
@@ -804,7 +768,7 @@ void DestruirLVO(LVO *l) {
         actual = siguienteNodo;            // Avanzamos al siguiente
     }
 
-    // Por seguridad, reseteamos los punteros de la estructura
+    //reseteamos los punteros de la estructura
     ResetLVO(l);
 }
 
@@ -932,7 +896,7 @@ void MostrarABB(ABB *arbol) {
         return;
     }
 
-    // Limpieza de buffer inicial
+
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 
@@ -955,7 +919,6 @@ void MostrarABB(ABB *arbol) {
         NodoArbol* actual = pila[tope--];
         contador++;
 
-        // Preparamos textos para mostrar los DNI de los hijos
         char infoHI[25] = "No tiene";
         char infoHD[25] = "No tiene";
 
@@ -1106,8 +1069,7 @@ int main() {
                         statsABB.evocar_fracaso.cantidad > 0 ? statsABB.evocar_fracaso.costo_acu / statsABB.evocar_fracaso.cantidad : 0);
                     printf("-----------------------------|--------------|--------------|--------------|\n");
 
-                    // Prueba Teórica solicitada en la corrección
-                    EvaluarCostosLocalizar(&miLista);
+
                     int c;
                     while ((c = getchar()) != '\n' && c != EOF);
                     getchar();
