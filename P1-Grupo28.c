@@ -332,7 +332,8 @@ void LocalizarLVO(LVO *lista , long dni , Nodo** pos , int *exito,float *costo){
 
     *pos = lista->cur;
 
-    if(lista->cur->dato.dni == dni){
+    //Corrección 1 de la devolución
+    if(lista->cur->dato.dni == dni & lista->cur->dato.dni != MAS_INFINITO){
         *exito = 1;
     }else{
         *exito = 0;
@@ -340,11 +341,22 @@ void LocalizarLVO(LVO *lista , long dni , Nodo** pos , int *exito,float *costo){
 }
 
 void AltaLVO(LVO *lista,elector nuevoDato, int *exito,float *costo){
+    //Corrección 2 de la devolución
+    if (nuevoDato.dni >= MAS_INFINITO) {
+        *exito = 0;
+        *costo = 0.0;
+        return;
+    }
+
     Nodo *pos;
     int encontrado; //Seria el exito prima de los apuntes
     float costoLocalizar = 0;
     *costo = 0.0;
+
+
     LocalizarLVO(lista,nuevoDato.dni,&pos,&encontrado,&costoLocalizar);
+
+
 
     if (encontrado == 1){
         *exito = 0;
@@ -994,7 +1006,7 @@ int main() {
     do {
         LimpiarPantalla();
         printf("\n======================================================\n");
-        printf("               MENU PRINCIPAL - PADRON                \n");
+        printf("               MENU PRINCIPAL - PADRON             \n");
         printf("======================================================\n");
         printf(" 1. Comparacion de Estructuras (Procesar Archivo)\n");
         printf(" 2. Mostrar Estructura\n");
