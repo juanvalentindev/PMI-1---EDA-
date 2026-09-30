@@ -293,9 +293,6 @@ void ResetLVO(LVO *l){
     l->aux = l->acc;
 }
 
-int IsEmptyLVO(LVO l){
-    return (l.acc->dato.dni == MAS_INFINITO);
-}
 
 int IsFullLVO(){
     Nodo *n = (Nodo *)malloc(sizeof(Nodo));
@@ -304,9 +301,6 @@ int IsFullLVO(){
     return 0;
 }
 
-int isOosLVO(LVO l) {
-    return (l.cur == NULL);
-}
 
 void FowardsLVO(LVO *l){
     l->aux = l->cur;
