@@ -63,7 +63,7 @@ Para finalizar, la LSO, es eficiente en sus operaciones de localizar, pero muy c
 #include <string.h>
 
 //Constantes
-#define ELECTORES_ESPERADOS 2000
+#define ELECTORES_ESPERADOS 10
 #define MAS_INFINITO 999999999
 
 //Definicion de struc's Patron
@@ -301,14 +301,9 @@ int IsFullLVO(){
     return 0;
 }
 
-
 void FowardsLVO(LVO *l){
     l->aux = l->cur;
     l->cur = l->cur->siguiente;
-}
-
-elector CopyLVO(LVO l){
-    return l.cur->dato;
 }
 
 //----------------------//
