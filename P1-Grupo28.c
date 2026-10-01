@@ -280,7 +280,14 @@ typedef struct {
 }LVO;
 
 void InitLVO(LVO *l){
-    Nodo *masInfinito= (Nodo*)malloc(sizeof(Nodo));
+    Nodo *masInfinito = (Nodo*)malloc(sizeof(Nodo));
+
+    // Controla si se obtuvo la memoria
+    if (masInfinito == NULL) {
+        printf("Error crítico: No hay memoria suficiente para inicializar la LVO.\n");
+        exit(1);
+    }
+
     masInfinito->dato.dni = MAS_INFINITO;
     masInfinito->siguiente = NULL;
     l->acc = masInfinito;
@@ -292,6 +299,7 @@ void ResetLVO(LVO *l){
     l->cur = l->acc;
     l->aux = l->acc;
 }
+
 
 
 int IsFullLVO(){
@@ -308,12 +316,11 @@ void FowardsLVO(LVO *l){
 
 //----------------------//
 void LocalizarLVO(LVO *lista , long dni , Nodo** pos , int *exito,float *costo){
-
     ResetLVO(lista);
     *costo = 0;
 
-
-    while(lista->cur->dato.dni < dni){
+    // Evitar que el puntero se pase del centinela si el DNI es inmenso
+    while(lista->cur->dato.dni < dni && lista->cur->dato.dni != MAS_INFINITO){
         (*costo)++; //Aumento porque consulto
         FowardsLVO(lista);
     }
@@ -321,8 +328,7 @@ void LocalizarLVO(LVO *lista , long dni , Nodo** pos , int *exito,float *costo){
 
     *pos = lista->cur;
 
-    //Corrección 1 de la devolución
-    if(lista->cur->dato.dni == dni & lista->cur->dato.dni != MAS_INFINITO){
+    if(lista->cur->dato.dni == dni && lista->cur->dato.dni != MAS_INFINITO){
         *exito = 1;
     }else{
         *exito = 0;
@@ -712,11 +718,13 @@ int memorizarDesdeArchivo(lso *miLista, LVO *lvo, ABB *abb, Estadisticas *statsL
             }
 
             //2. EVOCACION LVO
-            EvocarLVO(lvo, dniEvocar, &eTemp, &exitoLVO, &costoLVO);
-            if (exitoLVO == 1) {
-                RegistrarCosto(&statsLVO->evocar_exito, costoLVO);
-            } else {
-                RegistrarCosto(&statsLVO->evocar_fracaso, costoLVO);
+            if (dniEvocar < MAS_INFINITO) {
+                EvocarLVO(lvo, dniEvocar, &eTemp, &exitoLVO, &costoLVO);
+                if (exitoLVO == 1) {
+                    RegistrarCosto(&statsLVO->evocar_exito, costoLVO);
+                } else {
+                    RegistrarCosto(&statsLVO->evocar_fracaso, costoLVO);
+                }
             }
 
             //3. EVOCACION ABB
@@ -890,13 +898,51 @@ void MostrarLVO(LVO *lista) {
     printf("Fin del listado. Total mostrados: %d electores\n", contador);
 }
 
+/* ==========================================================================
+   PILA DINÁMICA PARA RECORRIDO ITERATIVO DEL ABB
+   ========================================================================== */
+typedef struct NodoPila {
+    NodoArbol *dato;
+    struct NodoPila *siguiente;
+} NodoPila;
+
+void pushPila(NodoPila **tope, NodoArbol *nodo) {
+    NodoPila *nuevoNodo = (NodoPila *)malloc(sizeof(NodoPila));
+
+    // Valida si el sistema operativo nos entregó la memoria solicitada
+    if (nuevoNodo != NULL) {
+        nuevoNodo->dato = nodo;
+        nuevoNodo->siguiente = *tope;
+        *tope = nuevoNodo;
+    } else {
+        printf("\nError: Memoria insuficiente para apilar el nodo del ABB.\n");
+    }
+}
+
+NodoArbol* popPila(NodoPila **tope) {
+    if (*tope == NULL) return NULL;
+
+    NodoPila *nodoAuxiliar = *tope;
+    NodoArbol *datoArbol = nodoAuxiliar->dato;
+
+    *tope = (*tope)->siguiente;
+    free(nodoAuxiliar);
+
+    return datoArbol;
+}
+
+void vaciarPila(NodoPila **tope) {
+    while (*tope != NULL) {
+        popPila(tope);
+    }
+}
+
 void MostrarABB(ABB *arbol) {
     // Verificamos si la estructura está vacía chequeando la raíz
     if (arbol->raiz == NULL) {
         printf("\nLa estructura ABB se encuentra vacia.\n");
         return;
     }
-
 
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
@@ -905,19 +951,16 @@ void MostrarABB(ABB *arbol) {
     printf("             PADRON DE ELECTORES (ABB - Recorrido Preorden Iterativo)\n");
     printf("==================================================================================\n");
 
-    // Creación de la Pila para hacer el recorrido Iterativo
-    NodoArbol* pila[2005];
-    int tope = -1;
+    // Creación de la Pila Dinámica
+    NodoPila *pila = NULL;
 
     // Iniciamos apilando la raíz
-    pila[++tope] = arbol->raiz;
+    pushPila(&pila, arbol->raiz);
     int contador = 0;
 
-    // Mientras la pila no esté vacía
-    while (tope >= 0) {
+    while (pila != NULL) {
 
-        // Desapilamos el nodo actual para procesarlo (Visitar Raíz)
-        NodoArbol* actual = pila[tope--];
+        NodoArbol* actual = popPila(&pila);
         contador++;
 
         char infoHI[25] = "No tiene";
@@ -946,6 +989,9 @@ void MostrarABB(ABB *arbol) {
             if (opcion == 'q' || opcion == 'Q') {
                 while ((c = getchar()) != '\n' && c != EOF);
                 printf("\nListado abortado por el usuario.\n");
+
+                // Si el usuario corta el listado, liberamos la memoria residual de la pila
+                vaciarPila(&pila);
                 break;
             } else if (opcion != '\n') {
                 while ((c = getchar()) != '\n' && c != EOF);
@@ -955,10 +1001,10 @@ void MostrarABB(ABB *arbol) {
         // Apilamos los hijos.
         // Como las pilas son LIFO (Last In, First Out), apilamos PRIMERO el DERECHO y LUEGO el IZQUIERDO.
         if (actual->hd != NULL) {
-            pila[++tope] = actual->hd;
+            pushPila(&pila, actual->hd);
         }
         if (actual->hi != NULL) {
-            pila[++tope] = actual->hi;
+            pushPila(&pila, actual->hi);
         }
     }
 
@@ -1009,9 +1055,11 @@ int main() {
             case 1:
                 printf("\nIniciando procesamiento del archivo de operaciones...\n");
 
-                DestruirABB(&abbPadron);
-                DestruirLSO(&miLista);
-                DestruirLVO(&lvoPadron);
+                if (estructurasCargadas == 1) {
+                    DestruirABB(&abbPadron);
+                    DestruirLSO(&miLista);
+                    DestruirLVO(&lvoPadron);
+                }
 
                 int cargaExitosa = memorizarDesdeArchivo(&miLista, &lvoPadron, &abbPadron, &statsLSO, &statsLVO, &statsABB);
 
